@@ -15,7 +15,9 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
     image = models.ImageField(upload_to="products/", blank=True, null=True)
-    image_url = models.URLField(blank=True, default="")  # fallback external URL
+    # Fallback external URL OR data-URL SVG. Meshy thumbnail URLs and SVG data-URLs
+    # can be long, so this is a TextField rather than URLField/CharField(200).
+    image_url = models.TextField(blank=True, default="")
     stl_file_reference = models.CharField(
         max_length=500, blank=True, default="",
         help_text="Shapeways model id, URL, or local path to STL.",
