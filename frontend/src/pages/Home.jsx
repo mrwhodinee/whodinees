@@ -15,18 +15,18 @@ export default function Home() {
     <>
       <section className="hero">
         <div className="container">
-          <div className="sparkles">✨ new — dinees are here</div>
+          <div className="sparkles">✨ first drop — dinees are here</div>
           <h1>small objects,<br/>big magic.</h1>
-          <p className="tagline">hand-designed, AI-dreamt, 3D-printed to order.</p>
+          <p className="tagline">tiny sculptural things for your desk, your shelf, your life. designed by hand, 3D-printed to order.</p>
           <div className="ctas">
             <Link className="button" to="/shop">Shop the dinees</Link>
-            <Link className="button ghost" to="/shop">See the collection</Link>
           </div>
+          <p className="coming-soon">🪴 functional planters coming soon</p>
         </div>
       </section>
 
       <section className="container">
-        <h2>Featured</h2>
+        <h2>The first dinees</h2>
         {products === null && <div className="loading">Loading…</div>}
         {products !== null && featured.length === 0 && (
           <div className="empty">No products yet — check back soon.</div>

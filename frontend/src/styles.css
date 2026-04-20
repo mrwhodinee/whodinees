@@ -10,6 +10,13 @@
   --radius: 18px;
 }
 
+.coming-soon {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  opacity: 0.85;
+}
+
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 body {

@@ -11,7 +11,7 @@ export default function Shop() {
   return (
     <section className="container page">
       <h1>All dinees</h1>
-      <p style={{color:'var(--ink-soft)', marginTop:'-0.5rem'}}>Tiny 3D printed planters. Pick your favorite.</p>
+      <p style={{color:'var(--ink-soft)', marginTop:'-0.5rem'}}>Tiny 3D-printed sculptures. Pick your favorite. (Real planters — with drainage holes and everything — coming next drop.)</p>
       {err && <div className="notice">Failed to load: {err}</div>}
       {products === null && !err && <div className="loading">Loading products…</div>}
       {products && products.length === 0 && <div className="empty">No products yet.</div>}
