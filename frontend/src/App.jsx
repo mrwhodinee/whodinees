@@ -25,11 +25,7 @@ function Header() {
           <span>Whodinees</span>
         </Link>
         <nav className="nav">
-          <NavLink to="/portraits">Portraits</NavLink>
-          <NavLink to="/shop">Shop</NavLink>
-          <NavLink to="/cart">
-            Cart{count > 0 && <span className="cart-badge">{count}</span>}
-          </NavLink>
+          <NavLink to="/portraits">How it works</NavLink>
         </nav>
       </div>
     </header>
@@ -41,9 +37,9 @@ function Footer() {
     <footer className="footer">
       <div className="container row">
         <div>
-          © {new Date().getFullYear()} Whodinees · <em>small objects, big magic</em>
+          © {new Date().getFullYear()} Whodinees · <em>tiny figurines of your tiny best friend</em>
         </div>
-        <div><Link to="/portraits">Portraits</Link> · <Link to="/shop">Shop</Link></div>
+        <div><Link to="/portraits">Get Started</Link></div>
       </div>
     </footer>
   )

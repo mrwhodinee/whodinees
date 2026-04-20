@@ -26,9 +26,30 @@ export default function PortraitsLanding() {
           </p>
           <div className="ctas">
             <Link className="button" to="/portraits/upload">Start your portrait →</Link>
-            <Link className="button-ghost" to="/shop">Or browse the sculptural shop</Link>
           </div>
           <p className="coming-soon">$19 refundable deposit · 3 variants to choose from</p>
+        </div>
+      </section>
+
+      <section className="container" style={{marginTop:'3rem'}}>
+        <h2>See examples</h2>
+        <p style={{color:'var(--ink-soft)', marginBottom:'2rem'}}>From photo to 3D model in minutes.</p>
+        <div className="showcase-grid">
+          <ShowcaseExample 
+            photo="/showcase/golden-retriever.jpg" 
+            model="/showcase/golden-retriever_3d_preview.png"
+            label="Golden Retriever"
+          />
+          <ShowcaseExample 
+            photo="/showcase/tabby-cat.jpg" 
+            model="/showcase/tabby-cat_3d_preview.png"
+            label="Tabby Cat"
+          />
+          <ShowcaseExample 
+            photo="/showcase/corgi.jpg" 
+            model="/showcase/corgi_3d_preview.png"
+            label="Corgi"
+          />
         </div>
       </section>
 
@@ -81,6 +102,25 @@ function Step({ n, title, children }) {
       <div className="step-num">{n}</div>
       <h3>{title}</h3>
       <p>{children}</p>
+    </div>
+  )
+}
+
+function ShowcaseExample({ photo, model, label }) {
+  return (
+    <div className="showcase-item">
+      <div className="showcase-pair">
+        <div className="showcase-img">
+          <img src={photo} alt={`${label} photo`} />
+          <div className="showcase-label">Original Photo</div>
+        </div>
+        <div className="showcase-arrow">→</div>
+        <div className="showcase-img">
+          <img src={model} alt={`${label} 3D model`} />
+          <div className="showcase-label">3D Model</div>
+        </div>
+      </div>
+      <div className="showcase-caption">{label}</div>
     </div>
   )
 }
