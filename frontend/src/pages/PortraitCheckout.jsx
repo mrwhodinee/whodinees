@@ -1,17 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { api } from '../api.js'
 
 const MATERIAL_LABEL = {
-  plastic:  'Plastic',
-  bronze:   'Bronze',
-  silver:   'Sterling Silver',
-  gold_14k: '14K Gold',
+  plastic: 'Plastic',
+  silver: 'Sterling Silver',
+  gold_14k_yellow: '14K Yellow Gold',
+  gold_14k_rose: '14K Rose Gold',
+  gold_14k_white: '14K White Gold',
+  gold_18k_yellow: '18K Yellow Gold',
   platinum: 'Platinum',
 }
-const SIZES = [40, 60, 80, 100]
 
 function PayForm({ portraitId, orderToken }) {
   const stripe = useStripe()
@@ -48,9 +49,9 @@ export default function PortraitCheckout() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [portrait, setPortrait] = useState(null)
-  const [pricing, setPricing] = useState(null)
-  const [material, setMaterial] = useState('plastic')
-  const [sizeMm, setSizeMm] = useState(60)
+  const [material, setMaterial] = useState('silver')
+  const [priceBreakdown, setPriceBreakdown] = useState(null)
+  const [loadingPrice, setLoadingPrice] = useState(false)
   const [shipping, setShipping] = useState({
     shipping_name: '', shipping_address1: '', shipping_address2: '',
     shipping_city: '', shipping_region: '', shipping_postcode: '', shipping_country: 'US',
@@ -69,19 +70,23 @@ export default function PortraitCheckout() {
         navigate(`/portraits/${id}`)
       }
     }).catch(e => setErr(String(e.message || e)))
-    api.getPortraitPricing().then(setPricing).catch(() => setPricing({}))
   }, [id, navigate])
 
-  const currentPrice = useMemo(() => {
-    if (!pricing || !pricing.materials) return null
-    return pricing.materials[material]?.by_size?.[String(sizeMm)] || null
-  }, [pricing, material, sizeMm])
+  // Load pricing when material changes
+  useEffect(() => {
+    if (!portrait) return
+    setLoadingPrice(true)
+    api.calculatePortraitPrice(id, material)
+      .then(setPriceBreakdown)
+      .catch(() => setPriceBreakdown(null))
+      .finally(() => setLoadingPrice(false))
+  }, [id, material, portrait])
 
   async function submit(e) {
     e.preventDefault()
     setSubmitting(true); setErr('')
     try {
-      const resp = await api.createPortraitOrder(id, { material, size_mm: sizeMm, ...shipping })
+      const resp = await api.createPortraitOrder(id, { material, ...shipping })
       setClientSecret(resp.client_secret)
       setOrderToken(resp.order.token)
       setStripePromise(loadStripe(resp.publishable_key))
@@ -92,82 +97,112 @@ export default function PortraitCheckout() {
 
   function setShipField(k, v) { setShipping(s => ({ ...s, [k]: v })) }
 
-  if (err) return <section className="container page"><h1>Error</h1><div className="notice">{err}</div></section>
-  if (!portrait || !pricing) return <section className="container page"><div className="loading">Loading…</div></section>
+  if (err && !portrait) return <section className="container page"><h1>Error</h1><div className="notice">{err}</div></section>
+  if (!portrait) return <section className="container page"><div className="loading">Loading…</div></section>
 
-  return (
-    <section className="container page" style={{display:'grid', gridTemplateColumns:'1fr minmax(260px, 360px)', gap:'2.5rem'}}>
-      <div>
-        <h1>Choose your material</h1>
-        {step === 'pick' && (
-          <form onSubmit={submit} className="checkout">
-            <fieldset style={{border:'none', padding:0, margin:'0 0 1rem'}}>
-              <legend style={{fontWeight:600, marginBottom:'0.5rem'}}>Material</legend>
-              <div className="material-picker">
-                {Object.entries(pricing.materials || {}).map(([mat, info]) => {
-                  const price = info.by_size?.[String(sizeMm)]?.retail
-                  return (
-                    <label key={mat} className={`material-option ${material === mat ? 'selected' : ''}`}>
-                      <input type="radio" name="material" value={mat} checked={material === mat} onChange={() => setMaterial(mat)} />
-                      <div>
-                        <strong>{MATERIAL_LABEL[mat] || mat}</strong>
-                        <div className="price">${price}</div>
-                      </div>
-                    </label>
-                  )
-                })}
-              </div>
-            </fieldset>
-
-            <fieldset style={{border:'none', padding:0, margin:'0 0 1rem'}}>
-              <legend style={{fontWeight:600, marginBottom:'0.5rem'}}>Size (longest dimension)</legend>
-              <div className="size-picker">
-                {SIZES.map(sz => (
-                  <label key={sz} className={`size-option ${sizeMm === sz ? 'selected' : ''}`}>
-                    <input type="radio" name="size" value={sz} checked={sizeMm === sz} onChange={() => setSizeMm(sz)} />
-                    <strong>{sz}mm</strong>
-                    <small>{sz === 40 ? 'keychain' : sz === 60 ? 'desk' : sz === 80 ? 'shelf' : 'statement'}</small>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <h2 style={{fontSize:'1.1rem', marginTop:'1rem'}}>Shipping</h2>
-            <label>Full name<input required value={shipping.shipping_name} onChange={e => setShipField('shipping_name', e.target.value)} /></label>
-            <label>Address line 1<input required value={shipping.shipping_address1} onChange={e => setShipField('shipping_address1', e.target.value)} /></label>
-            <label>Address line 2 (optional)<input value={shipping.shipping_address2} onChange={e => setShipField('shipping_address2', e.target.value)} /></label>
-            <div className="row3">
-              <label>City<input required value={shipping.shipping_city} onChange={e => setShipField('shipping_city', e.target.value)} /></label>
-              <label>Region<input value={shipping.shipping_region} onChange={e => setShipField('shipping_region', e.target.value)} /></label>
-              <label>Postcode<input required value={shipping.shipping_postcode} onChange={e => setShipField('shipping_postcode', e.target.value)} /></label>
-            </div>
-            <label>Country (2-letter)<input required maxLength={2} value={shipping.shipping_country} onChange={e => setShipField('shipping_country', e.target.value.toUpperCase())} /></label>
-
-            <button disabled={submitting}>{submitting ? 'Preparing payment…' : 'Continue to payment →'}</button>
-          </form>
-        )}
-
-        {step === 'pay' && stripePromise && clientSecret && (
+  if (step === 'pay') {
+    return (
+      <section className="container page" style={{maxWidth:640}}>
+        <h1>Payment</h1>
+        {stripePromise && clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#8a5cff' } } }}>
             <PayForm portraitId={id} orderToken={orderToken} />
           </Elements>
+        ) : (
+          <div className="loading">Preparing payment…</div>
         )}
-      </div>
+      </section>
+    )
+  }
 
-      <aside>
-        <h2 style={{fontSize:'1.2rem'}}>Price breakdown</h2>
-        {currentPrice ? (
-          <div className="summary">
-            <div className="row"><span>Design fee</span><span>${currentPrice.design_fee}</span></div>
-            <div className="row"><span>Material ({currentPrice.estimated_weight_g}g est.)</span><span>${currentPrice.metal_cost}</span></div>
-            <div className="row"><span>Printing & handling</span><span>${currentPrice.shapeways_cost_with_handling}</span></div>
-            <div className="row total"><span>Total</span><span>${currentPrice.retail}</span></div>
-            <p style={{color:'var(--ink-soft)', fontSize:'0.8rem', marginTop:'0.6rem'}}>
-              Final price confirmed at checkout. Metal weight is an estimate; we'll quote exactly from the 3D model.
-            </p>
+  return (
+    <section className="container page">
+      <h1>Order your portrait</h1>
+      
+      <div style={{display:'grid', gridTemplateColumns:'1fr 360px', gap:'2.5rem', alignItems:'start'}}>
+        <form onSubmit={submit} className="checkout">
+          <h2>Material</h2>
+          <div className="material-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:'1rem', marginBottom:'2rem'}}>
+            {Object.entries(MATERIAL_LABEL).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={material === key ? 'material-btn active' : 'material-btn'}
+                onClick={() => setMaterial(key)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        ) : <div className="loading">Pricing…</div>}
-      </aside>
+
+          <h2>Shipping</h2>
+          <label>Name<input required value={shipping.shipping_name} onChange={e => setShipField('shipping_name', e.target.value)} /></label>
+          <label>Address<input required value={shipping.shipping_address1} onChange={e => setShipField('shipping_address1', e.target.value)} /></label>
+          <label>Apt/Suite (optional)<input value={shipping.shipping_address2} onChange={e => setShipField('shipping_address2', e.target.value)} /></label>
+          <div className="row2">
+            <label>City<input required value={shipping.shipping_city} onChange={e => setShipField('shipping_city', e.target.value)} /></label>
+            <label>State/Region<input required value={shipping.shipping_region} onChange={e => setShipField('shipping_region', e.target.value)} /></label>
+          </div>
+          <div className="row2">
+            <label>ZIP/Postal<input required value={shipping.shipping_postcode} onChange={e => setShipField('shipping_postcode', e.target.value)} /></label>
+            <label>Country
+              <select value={shipping.shipping_country} onChange={e => setShipField('shipping_country', e.target.value)}>
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+                <option value="GB">United Kingdom</option>
+                <option value="AU">Australia</option>
+              </select>
+            </label>
+          </div>
+
+          {err && <div className="notice">{err}</div>}
+          <button disabled={submitting || loadingPrice}>{submitting ? 'Processing…' : 'Continue to payment'}</button>
+        </form>
+
+        <div className="order-summary" style={{position:'sticky', top:'2rem'}}>
+          <h3>Price Breakdown</h3>
+          {loadingPrice && <div className="loading">Calculating…</div>}
+          {!loadingPrice && priceBreakdown && (
+            <div className="price-breakdown">
+              <div className="breakdown-row">
+                <span>Material:</span>
+                <strong>{MATERIAL_LABEL[material]}</strong>
+              </div>
+              <div className="breakdown-row">
+                <span>Weight:</span>
+                <span>{priceBreakdown.weight_grams}g</span>
+              </div>
+              {priceBreakdown.spot_price_per_gram > 0 && (
+                <div className="breakdown-row">
+                  <span>Spot price:</span>
+                  <span>${priceBreakdown.spot_price_per_gram}/g (live)</span>
+                </div>
+              )}
+              <div className="breakdown-row">
+                <span>Material cost:</span>
+                <span>${priceBreakdown.material_cost}</span>
+              </div>
+              <div className="breakdown-row">
+                <span>Production & casting:</span>
+                <span>${priceBreakdown.shapeways_cost}</span>
+              </div>
+              <div className="breakdown-row">
+                <span>Design fee ({priceBreakdown.complexity}):</span>
+                <span>${priceBreakdown.design_fee}</span>
+              </div>
+              <div className="breakdown-row total">
+                <span>Total:</span>
+                <strong>${priceBreakdown.total}</strong>
+              </div>
+              {material !== 'plastic' && (
+                <p style={{fontSize:'0.85rem', color:'var(--ink-soft)', marginTop:'1rem'}}>
+                  Precious metal prices update daily. Your price is locked at checkout.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   )
 }

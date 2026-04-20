@@ -216,29 +216,47 @@ def create_portrait_order(request, portrait_id: int):
     if portrait.status not in ("approved", "ordered"):
         return Response({"detail": f"Portrait is not approved (status={portrait.status})"}, status=400)
 
-    material = request.data.get("material")
-    try:
-        size_mm = int(request.data.get("size_mm") or 0)
-    except (TypeError, ValueError):
-        return Response({"detail": "size_mm must be an integer"}, status=400)
+    if not portrait.selected_variant_task_id:
+        return Response({"detail": "No variant selected"}, status=400)
 
+    material = request.data.get("material")
     if material not in dict(PortraitOrder.MATERIAL_CHOICES):
         return Response({"detail": "Invalid material"}, status=400)
-    if size_mm not in pricing.SIZE_OPTIONS_MM:
-        return Response({"detail": f"Invalid size_mm; must be one of {pricing.SIZE_OPTIONS_MM}"}, status=400)
 
-    price = pricing.compute_price(material, size_mm)
-    metal_prices_snapshot = metal_prices.get_metal_prices()
+    # Get GLB URL from selected variant
+    selected = next(
+        (v for v in portrait.meshy_variants if v.get("task_id") == portrait.selected_variant_task_id),
+        None
+    )
+    if not selected or not selected.get("glb_url"):
+        return Response({"detail": "GLB not available"}, status=400)
 
+    # Calculate pricing using actual model
+    try:
+        breakdown = pricing.compute_price_for_model(
+            glb_url=selected["glb_url"],
+            material=material,
+            shapeways_cost=48.00,
+        )
+    except Exception as e:
+        logger.exception("Failed to calculate pricing")
+        return Response({"detail": f"Pricing calculation failed: {e}"}, status=500)
+
+    # Create order with full pricing breakdown
     order = PortraitOrder.objects.create(
         portrait=portrait,
         material=material,
-        size_mm=size_mm,
-        retail_price=Decimal(price["retail"]),
-        design_fee=Decimal(price["design_fee"]),
-        estimated_metal_weight_g=Decimal(str(price["estimated_weight_g"])),
-        metal_spot_price_snapshot=metal_prices_snapshot,
-        shapeways_cost_estimate=Decimal(price["shapeways_cost_with_handling"]),
+        size_mm=int(max(breakdown["bbox_mm"]) if "bbox_mm" in breakdown else 40),
+        volume_cm3=Decimal(str(breakdown["volume_cm3"])),
+        weight_grams=Decimal(str(breakdown["weight_grams"])),
+        polycount=breakdown["polycount"],
+        complexity_tier=breakdown["complexity"],
+        spot_price_per_gram=Decimal(str(breakdown["spot_price_per_gram"])),
+        material_cost=Decimal(str(breakdown["material_cost"])),
+        shapeways_cost=Decimal(str(breakdown["shapeways_cost"])),
+        design_fee=Decimal(str(breakdown["design_fee"])),
+        retail_price=Decimal(str(breakdown["total"])),
+        pricing_breakdown_json=breakdown,
         shipping_name=request.data.get("shipping_name", "") or "",
         shipping_address1=request.data.get("shipping_address1", "") or "",
         shipping_address2=request.data.get("shipping_address2", "") or "",
@@ -259,7 +277,7 @@ def create_portrait_order(request, portrait_id: int):
         currency="usd",
         automatic_payment_methods={"enabled": True},
         metadata=_order_metadata(order),
-        description=f"Whodinees Portrait — {material} {size_mm}mm",
+        description=f"Whodinees Portrait — {material} {order.size_mm}mm",
         receipt_email=portrait.customer_email or None,
     )
     order.stripe_payment_intent_id = intent["id"]
@@ -271,7 +289,7 @@ def create_portrait_order(request, portrait_id: int):
     return Response(
         {
             "order": PortraitOrderSerializer(order).data,
-            "price_breakdown": price,
+            "price_breakdown": breakdown,
             "client_secret": intent["client_secret"],
             "payment_intent_id": intent["id"],
             "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
@@ -285,6 +303,47 @@ def create_portrait_order(request, portrait_id: int):
 def pricing_view(request):
     """GET /api/pricing/portrait — full pricing matrix."""
     return Response(pricing.compute_all_pricing())
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def calculate_portrait_price(request, portrait_id: int):
+    """POST /api/portraits/:id/calculate-price
+    
+    Calculate live pricing for a specific portrait + material.
+    Body: {"material": "silver"}
+    """
+    try:
+        portrait = PetPortrait.objects.get(pk=portrait_id)
+    except PetPortrait.DoesNotExist:
+        return Response({"detail": "Not found"}, status=404)
+    
+    if not portrait.selected_variant_task_id:
+        return Response({"detail": "No variant selected"}, status=400)
+    
+    # Get GLB URL from selected variant
+    selected = next(
+        (v for v in portrait.meshy_variants if v.get("task_id") == portrait.selected_variant_task_id),
+        None
+    )
+    if not selected or not selected.get("glb_url"):
+        return Response({"detail": "GLB not available"}, status=400)
+    
+    material = request.data.get("material", "silver")
+    if material not in dict(PortraitOrder.MATERIAL_CHOICES):
+        return Response({"detail": "Invalid material"}, status=400)
+    
+    # Calculate pricing using actual model
+    try:
+        breakdown = pricing.compute_price_for_model(
+            glb_url=selected["glb_url"],
+            material=material,
+            shapeways_cost=48.00,
+        )
+        return Response(breakdown)
+    except Exception as e:
+        logger.exception("Pricing calculation failed")
+        return Response({"detail": str(e)}, status=500)
 
 
 @csrf_exempt

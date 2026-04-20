@@ -39,5 +39,6 @@ export const api = {
   startGeneration:    (id) => request(`/api/portraits/${id}/start-generation`, { method: 'POST', body: '{}' }),
   approveVariant:     (id, taskId) => request(`/api/portraits/${id}/approve`, { method: 'POST', body: JSON.stringify({ task_id: taskId }) }),
   createPortraitOrder:(id, payload) => request(`/api/portraits/${id}/order`, { method: 'POST', body: JSON.stringify(payload) }),
+  calculatePortraitPrice:(id, material) => request(`/api/portraits/${id}/calculate-price`, { method: 'POST', body: JSON.stringify({ material }) }),
   getPortraitPricing: () => request('/api/pricing/portrait'),
 }
