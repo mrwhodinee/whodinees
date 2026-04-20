@@ -1,0 +1,12 @@
+{
+  "name": "whodinees",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Whodinees monorepo — Node portion builds the React frontend; Python portion runs the Django backend.",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "heroku-postbuild": "cd frontend && npm ci && NODE_ENV=production npm run build"
+  }
+}
