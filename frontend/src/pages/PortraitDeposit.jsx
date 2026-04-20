@@ -90,10 +90,16 @@ export default function PortraitDeposit() {
         <div className="row"><span>Photo quality</span><span>{portrait.photo_quality_score}/100</span></div>
         <div className="row total"><span>Deposit</span><span>$19.00</span></div>
       </div>
-      <p style={{color:'var(--ink-soft)', fontSize:'0.9rem', margin:'1rem 0'}}>
-        Your deposit covers generating 3 unique 3D variants. When you order a physical print,
-        this $19 is credited toward your total. If none of the variants work, we'll refund it.
-      </p>
+      <div style={{background:'var(--accent-soft)', padding:'1rem', borderRadius:'12px', margin:'1rem 0', fontSize:'0.9rem'}}>
+        <p style={{margin:'0 0 0.5rem', fontWeight:600}}>What you get:</p>
+        <ul style={{margin:0, paddingLeft:'1.25rem', color:'var(--ink-soft)'}}>
+          <li>3 unique 3D model variants of your pet</li>
+          <li>Digital files to keep (GLB format) — yours regardless</li>
+          <li>Review & approve before buying physical print</li>
+          <li>$19 deposit is <strong>non-refundable</strong> (covers AI generation cost)</li>
+          <li>If you order a print, deposit credits toward your total</li>
+        </ul>
+      </div>
       {stripePromise && clientSecret ? (
         <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#8a5cff' } } }}>
           <PayForm portraitId={id} />

@@ -56,10 +56,10 @@ export default function PortraitsLanding() {
       <section className="container">
         <h2>How it works</h2>
         <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))'}}>
-          <Step n="1" title="Upload a photo">A clear, well-lit shot of your pet — face visible, in focus. We'll check it's sharp enough.</Step>
-          <Step n="2" title="Pay the $19 deposit">We use it to generate three unique 3D variants from your photo. Takes ~5 minutes.</Step>
-          <Step n="3" title="Pick your favorite">Rotate each variant in 3D. Approve the one that nails them.</Step>
-          <Step n="4" title="Choose your material">Plastic, bronze, silver, 14K gold, or platinum. We print, finish, and ship.</Step>
+          <Step n="1" title="Upload a premium photo">Sharp, well-lit, face clearly visible. We reject blurry or low-res photos — 8/10+ quality only.</Step>
+          <Step n="2" title="Pay $19 deposit">Non-refundable (covers AI cost). Generates 3 variants + you keep the digital files.</Step>
+          <Step n="3" title="Review & approve">View your 3D models, pick your favorite. Decide if you want a physical print.</Step>
+          <Step n="4" title="Choose material & order">Bronze, silver, 14K gold, or platinum. Deposit credits toward your total.</Step>
         </div>
       </section>
 

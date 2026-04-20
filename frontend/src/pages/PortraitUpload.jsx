@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
 
-const MIN_SHORTEST_SIDE = 1024
+const MIN_SHORTEST_SIDE = 1400
 const MAX_BYTES = 15 * 1024 * 1024
+const MIN_BYTES = 100 * 1024
 
 export default function PortraitUpload() {
   const navigate = useNavigate()
@@ -26,7 +27,7 @@ export default function PortraitUpload() {
     if (!f) { setFile(null); setPreviewUrl(''); return }
     const issues = []
     if (f.size > MAX_BYTES) issues.push(`File is too large (${(f.size/1024/1024).toFixed(1)}MB, max 15MB)`)
-    if (f.size < 50 * 1024) issues.push('File is too small — upload a higher-quality photo')
+    if (f.size < MIN_BYTES) issues.push(`File is too small (${(f.size/1024).toFixed(0)}KB) — we need a high-resolution photo (min 100KB)`)
 
     const url = URL.createObjectURL(f)
     const dims = await new Promise(res => {
@@ -71,7 +72,7 @@ export default function PortraitUpload() {
     <section className="container page">
       <h1>Upload a photo</h1>
       <p style={{color:'var(--ink-soft)', maxWidth:'52ch'}}>
-        Pick a sharp, well-lit photo of your pet with their face visible. Eyes open, single subject, no heavy filters.
+        <strong>Premium quality required:</strong> Sharp focus, good lighting, face clearly visible, eyes open, single subject. Minimum 1400px shortest side. We reject blurry or low-res photos.
       </p>
 
       <form className="checkout" onSubmit={onSubmit} style={{maxWidth:'560px'}}>

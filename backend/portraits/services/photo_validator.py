@@ -9,9 +9,10 @@ from typing import Tuple, List
 
 logger = logging.getLogger(__name__)
 
-MIN_SHORTEST_SIDE_PX = 1024
+MIN_SHORTEST_SIDE_PX = 1400  # Raised for premium quality
 MAX_FILE_BYTES = 15 * 1024 * 1024
-MIN_FILE_BYTES = 50 * 1024  # 50KB — below this we assume junk
+MIN_FILE_BYTES = 100 * 1024  # 100KB minimum
+MIN_ACCEPTABLE_SCORE = 80  # 8/10 quality gate
 
 
 def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
@@ -26,10 +27,10 @@ def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
         return False, 0, [f"Could not read file: {e}"]
 
     if size < MIN_FILE_BYTES:
-        issues.append(f"File is too small ({size} bytes); please upload a higher-quality photo.")
-        score -= 40
+        issues.append(f"File is too small ({size // 1024}KB); we need a high-resolution photo (minimum 100KB).")
+        score -= 50
     elif size > MAX_FILE_BYTES:
-        issues.append(f"File is too large ({size} bytes); max is {MAX_FILE_BYTES} bytes.")
+        issues.append(f"File is too large ({size // 1024 // 1024}MB); max is 15MB.")
         score -= 30
 
     # Resolution check (Pillow is already required)
@@ -40,11 +41,11 @@ def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
             short = min(w, h)
             if short < MIN_SHORTEST_SIDE_PX:
                 issues.append(
-                    f"Image is too small ({w}×{h}); we need at least {MIN_SHORTEST_SIDE_PX}px on the shortest side."
+                    f"Image resolution too low ({w}×{h}). We need at least {MIN_SHORTEST_SIDE_PX}px on the shortest side for premium quality."
                 )
-                score -= 40
-            elif short < 1400:
-                score -= 10  # acceptable but not great
+                score -= 50
+            elif short < 1800:
+                score -= 15  # below ideal but passable
     except Exception as e:
         issues.append(f"Could not read image: {e}")
         score = 0
@@ -57,12 +58,14 @@ def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
         img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
         if img is not None:
             lap_var = cv2.Laplacian(img, cv2.CV_64F).var()
+            # Strict blur threshold for premium service
             # Typical: > 500 = sharp, 100-500 = usable, < 100 = blurry
-            if lap_var < 60:
-                issues.append("Photo appears blurry; a sharper photo will produce a much better portrait.")
-                score -= 30
-            elif lap_var < 150:
-                score -= 10
+            if lap_var < 100:
+                issues.append("Photo is too blurry. Please upload a sharp, well-focused image.")
+                score -= 40
+            elif lap_var < 200:
+                issues.append("Photo could be sharper for best results.")
+                score -= 20
     except ImportError:
         # OpenCV not installed — skip blur check.
         # TODO: add opencv-python-headless to requirements if we want this live.
@@ -74,5 +77,9 @@ def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
     # implemented. For now we rely on the customer and a manual review step.
 
     score = max(0, min(100, score))
-    passed = score >= 60 and not any("too small" in i.lower() or "too large" in i.lower() for i in issues)
+    # Premium service: require 80+ score (8/10)
+    passed = score >= MIN_ACCEPTABLE_SCORE and not any(
+        phrase in i.lower() for i in issues 
+        for phrase in ["too small", "too large", "too low", "too blurry"]
+    )
     return passed, score, issues
