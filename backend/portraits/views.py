@@ -1,0 +1,357 @@
+"""Whodinees Portraits API views."""
+import json
+import logging
+from decimal import Decimal
+from django.conf import settings
+from django.http import HttpResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status as http_status
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+import stripe
+
+from .models import PetPortrait, PortraitOrder
+from .serializers import PetPortraitSerializer, PortraitOrderSerializer
+from .services import photo_validator, meshy_portrait, pricing, metal_prices
+
+logger = logging.getLogger(__name__)
+
+DEPOSIT_AMOUNT_USD = 19  # $19 deposit
+
+
+def _pi_metadata(portrait: PetPortrait) -> dict:
+    return {
+        "portrait_id": str(portrait.id),
+        "portrait_token": str(portrait.token),
+        "customer_email": portrait.customer_email,
+        "flow": "portrait_deposit",
+    }
+
+
+def _order_metadata(order: PortraitOrder) -> dict:
+    return {
+        "portrait_order_id": str(order.id),
+        "portrait_order_token": str(order.token),
+        "portrait_id": str(order.portrait_id),
+        "flow": "portrait_order",
+    }
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([MultiPartParser, FormParser])
+def create_portrait(request):
+    """POST /api/portraits/ — upload photo, validate, create PetPortrait."""
+    email = (request.data.get("customer_email") or "").strip()
+    pet_name = (request.data.get("pet_name") or "").strip()
+    pet_type = (request.data.get("pet_type") or "dog").strip()
+    photo = request.FILES.get("photo")
+
+    if not email:
+        return Response({"detail": "customer_email is required"}, status=400)
+    if not photo:
+        return Response({"detail": "photo is required"}, status=400)
+    if pet_type not in dict(PetPortrait.PET_TYPES):
+        return Response({"detail": "Invalid pet_type"}, status=400)
+
+    portrait = PetPortrait.objects.create(
+        customer_email=email,
+        pet_name=pet_name,
+        pet_type=pet_type,
+        uploaded_photo=photo,
+        status="photo_uploaded",
+    )
+
+    # Validate on-disk file
+    try:
+        passed, score, issues = photo_validator.validate_photo(portrait.uploaded_photo.path)
+    except Exception as e:
+        logger.exception("Photo validation errored: %s", e)
+        passed, score, issues = True, 50, [f"Validation warning: {e}"]
+
+    portrait.photo_quality_score = score
+    portrait.photo_issues = issues
+    if not passed:
+        portrait.status = "photo_rejected"
+    portrait.save(update_fields=["photo_quality_score", "photo_issues", "status", "updated_at"])
+
+    return Response(
+        {
+            "portrait": PetPortraitSerializer(portrait).data,
+            "passed": passed,
+            "score": score,
+            "issues": issues,
+        },
+        status=http_status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([JSONParser])
+def start_generation(request, portrait_id: int):
+    """POST /api/portraits/:id/start-generation — creates $19 Stripe deposit PI."""
+    try:
+        portrait = PetPortrait.objects.get(pk=portrait_id)
+    except PetPortrait.DoesNotExist:
+        return Response({"detail": "Not found"}, status=404)
+
+    if portrait.status == "photo_rejected":
+        return Response({"detail": "Photo was rejected. Please upload a new photo."}, status=400)
+    if portrait.deposit_paid:
+        return Response({"detail": "Deposit already paid."}, status=400)
+
+    if not settings.STRIPE_SECRET_KEY:
+        return Response({"detail": "Stripe is not configured"}, status=500)
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    intent = stripe.PaymentIntent.create(
+        amount=DEPOSIT_AMOUNT_USD * 100,
+        currency="usd",
+        automatic_payment_methods={"enabled": True},
+        metadata=_pi_metadata(portrait),
+        description="Whodinees Portraits Deposit",
+        receipt_email=portrait.customer_email or None,
+    )
+    portrait.deposit_payment_intent_id = intent["id"]
+    portrait.status = "deposit_pending"
+    portrait.save(update_fields=["deposit_payment_intent_id", "status", "updated_at"])
+
+    return Response(
+        {
+            "client_secret": intent["client_secret"],
+            "payment_intent_id": intent["id"],
+            "amount": DEPOSIT_AMOUNT_USD,
+            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+        }
+    )
+
+
+def _refresh_variant_statuses(portrait: PetPortrait) -> bool:
+    """Poll each in-flight Meshy variant. Returns True if any status changed."""
+    changed = False
+    for v in portrait.meshy_variants:
+        tid = v.get("task_id")
+        cur_status = (v.get("status") or "").upper()
+        if not tid or cur_status in ("SUCCEEDED", "SUCCESS", "COMPLETED", "FAILED", "CANCELED", "EXPIRED", "ERROR"):
+            continue
+        try:
+            info = meshy_portrait.poll_task(tid)
+        except Exception as e:
+            logger.warning("Meshy poll failed for %s: %s", tid, e)
+            continue
+        if info["status"] != cur_status:
+            v["status"] = info["status"]
+            v["progress"] = info.get("progress", 0)
+            v["preview_url"] = info.get("preview_url") or v.get("preview_url", "")
+            v["glb_url"] = info.get("glb_url") or v.get("glb_url", "")
+            changed = True
+    return changed
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_portrait(request, portrait_id: int):
+    """GET /api/portraits/:id — status + Meshy progress + preview urls."""
+    try:
+        portrait = PetPortrait.objects.get(pk=portrait_id)
+    except PetPortrait.DoesNotExist:
+        return Response({"detail": "Not found"}, status=404)
+
+    # If we're generating, refresh Meshy task statuses
+    if portrait.status == "generating" and portrait.meshy_variants:
+        if _refresh_variant_statuses(portrait):
+            # If all variants are terminal and at least one succeeded, move to approval
+            terminal = {"SUCCEEDED", "SUCCESS", "COMPLETED", "FAILED", "CANCELED", "EXPIRED", "ERROR"}
+            good = {"SUCCEEDED", "SUCCESS", "COMPLETED"}
+            statuses = [(v.get("status") or "").upper() for v in portrait.meshy_variants]
+            if all(s in terminal for s in statuses) and any(s in good for s in statuses):
+                portrait.status = "awaiting_approval"
+        portrait.save(update_fields=["meshy_variants", "status", "updated_at"])
+
+    return Response(PetPortraitSerializer(portrait).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([JSONParser])
+def approve_variant(request, portrait_id: int):
+    """POST /api/portraits/:id/approve — pick winning variant."""
+    try:
+        portrait = PetPortrait.objects.get(pk=portrait_id)
+    except PetPortrait.DoesNotExist:
+        return Response({"detail": "Not found"}, status=404)
+
+    if portrait.status not in ("awaiting_approval", "approved"):
+        return Response({"detail": f"Cannot approve from status={portrait.status}"}, status=400)
+
+    task_id = (request.data.get("task_id") or "").strip()
+    if not task_id:
+        return Response({"detail": "task_id is required"}, status=400)
+
+    if not any(v.get("task_id") == task_id for v in portrait.meshy_variants):
+        return Response({"detail": "task_id is not a variant of this portrait"}, status=400)
+
+    portrait.selected_variant_task_id = task_id
+    portrait.status = "approved"
+    portrait.approved_at = timezone.now()
+    portrait.save(update_fields=["selected_variant_task_id", "status", "approved_at", "updated_at"])
+    return Response(PetPortraitSerializer(portrait).data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([JSONParser])
+def create_portrait_order(request, portrait_id: int):
+    """POST /api/portraits/:id/order — create PortraitOrder + Stripe PI."""
+    try:
+        portrait = PetPortrait.objects.get(pk=portrait_id)
+    except PetPortrait.DoesNotExist:
+        return Response({"detail": "Not found"}, status=404)
+
+    if portrait.status not in ("approved", "ordered"):
+        return Response({"detail": f"Portrait is not approved (status={portrait.status})"}, status=400)
+
+    material = request.data.get("material")
+    try:
+        size_mm = int(request.data.get("size_mm") or 0)
+    except (TypeError, ValueError):
+        return Response({"detail": "size_mm must be an integer"}, status=400)
+
+    if material not in dict(PortraitOrder.MATERIAL_CHOICES):
+        return Response({"detail": "Invalid material"}, status=400)
+    if size_mm not in pricing.SIZE_OPTIONS_MM:
+        return Response({"detail": f"Invalid size_mm; must be one of {pricing.SIZE_OPTIONS_MM}"}, status=400)
+
+    price = pricing.compute_price(material, size_mm)
+    metal_prices_snapshot = metal_prices.get_metal_prices()
+
+    order = PortraitOrder.objects.create(
+        portrait=portrait,
+        material=material,
+        size_mm=size_mm,
+        retail_price=Decimal(price["retail"]),
+        design_fee=Decimal(price["design_fee"]),
+        estimated_metal_weight_g=Decimal(str(price["estimated_weight_g"])),
+        metal_spot_price_snapshot=metal_prices_snapshot,
+        shapeways_cost_estimate=Decimal(price["shapeways_cost_with_handling"]),
+        shipping_name=request.data.get("shipping_name", "") or "",
+        shipping_address1=request.data.get("shipping_address1", "") or "",
+        shipping_address2=request.data.get("shipping_address2", "") or "",
+        shipping_city=request.data.get("shipping_city", "") or "",
+        shipping_region=request.data.get("shipping_region", "") or "",
+        shipping_postcode=request.data.get("shipping_postcode", "") or "",
+        shipping_country=(request.data.get("shipping_country") or "US")[:2],
+        status="pending",
+    )
+
+    # Stripe PI for the print upsell
+    if not settings.STRIPE_SECRET_KEY:
+        return Response({"detail": "Stripe not configured"}, status=500)
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    amount_cents = int((order.retail_price * 100).to_integral_value())
+    intent = stripe.PaymentIntent.create(
+        amount=amount_cents,
+        currency="usd",
+        automatic_payment_methods={"enabled": True},
+        metadata=_order_metadata(order),
+        description=f"Whodinees Portrait — {material} {size_mm}mm",
+        receipt_email=portrait.customer_email or None,
+    )
+    order.stripe_payment_intent_id = intent["id"]
+    order.save(update_fields=["stripe_payment_intent_id", "updated_at"])
+
+    portrait.status = "ordered"
+    portrait.save(update_fields=["status", "updated_at"])
+
+    return Response(
+        {
+            "order": PortraitOrderSerializer(order).data,
+            "price_breakdown": price,
+            "client_secret": intent["client_secret"],
+            "payment_intent_id": intent["id"],
+            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+        },
+        status=http_status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def pricing_view(request):
+    """GET /api/pricing/portrait — full pricing matrix."""
+    return Response(pricing.compute_all_pricing())
+
+
+@csrf_exempt
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def portrait_stripe_webhook(request):
+    """Webhook endpoint for portrait flows.
+
+    Handles:
+      - payment_intent.succeeded with metadata.flow == "portrait_deposit":
+        Fire 3 Meshy tasks, mark deposit_paid, status=generating.
+      - payment_intent.succeeded with metadata.flow == "portrait_order":
+        Mark order as paid (Shapeways submission is a manual review step for now).
+    """
+    from store.services import stripe_service
+
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+    try:
+        event = stripe_service.construct_webhook_event(payload, sig_header)
+    except Exception as e:
+        logger.warning("Portrait webhook sig verify failed: %s", e)
+        return HttpResponse(status=400)
+
+    event_type = event["type"] if isinstance(event, dict) else event.type
+    data_obj = event["data"]["object"] if isinstance(event, dict) else event.data.object
+    meta = (data_obj.get("metadata") if isinstance(data_obj, dict) else data_obj.metadata) or {}
+    flow = meta.get("flow", "")
+
+    if event_type != "payment_intent.succeeded":
+        return HttpResponse(status=200)
+
+    pi_id = data_obj.get("id") if isinstance(data_obj, dict) else data_obj.id
+
+    if flow == "portrait_deposit":
+        try:
+            portrait = PetPortrait.objects.get(deposit_payment_intent_id=pi_id)
+        except PetPortrait.DoesNotExist:
+            logger.warning("Deposit webhook for unknown PI %s", pi_id)
+            return HttpResponse(status=200)
+
+        if portrait.deposit_paid:
+            return HttpResponse(status=200)
+
+        portrait.deposit_paid = True
+        try:
+            task_ids = meshy_portrait.submit_variants(portrait.uploaded_photo.path, n=3)
+        except Exception as e:
+            logger.exception("Meshy variant submission failed: %s", e)
+            task_ids = []
+
+        portrait.meshy_variants = [
+            {"task_id": tid, "status": "PENDING", "progress": 0, "preview_url": "", "glb_url": ""}
+            for tid in task_ids
+        ]
+        portrait.status = "generating" if task_ids else portrait.status
+        portrait.save(update_fields=["deposit_paid", "meshy_variants", "status", "updated_at"])
+
+    elif flow == "portrait_order":
+        try:
+            order = PortraitOrder.objects.get(stripe_payment_intent_id=pi_id)
+        except PortraitOrder.DoesNotExist:
+            logger.warning("Order webhook for unknown PI %s", pi_id)
+            return HttpResponse(status=200)
+        if order.status == "pending":
+            order.status = "paid"
+            order.save(update_fields=["status", "updated_at"])
+            # TODO: submit to Shapeways once we have the approved GLB's model upload flow
+
+    return HttpResponse(status=200)

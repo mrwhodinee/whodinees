@@ -7,6 +7,7 @@ from store import views as store_views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("store.urls")),
+    path("api/", include("portraits.urls")),
     # SPA catch-all. Keep last; admin and api are matched first.
     re_path(r"^(?!static/|media/|api/|admin/).*$", store_views.spa_index, name="spa"),
 ]
