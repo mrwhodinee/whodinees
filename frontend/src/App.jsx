@@ -8,6 +8,12 @@ import ProductPage from './pages/ProductPage.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import OrderConfirmation from './pages/OrderConfirmation.jsx'
+import PortraitsLanding from './pages/PortraitsLanding.jsx'
+import PortraitUpload from './pages/PortraitUpload.jsx'
+import PortraitDeposit from './pages/PortraitDeposit.jsx'
+import PortraitStatus from './pages/PortraitStatus.jsx'
+import PortraitCheckout from './pages/PortraitCheckout.jsx'
+import PortraitConfirmation from './pages/PortraitConfirmation.jsx'
 
 function Header() {
   const { count } = useCart()
@@ -19,6 +25,7 @@ function Header() {
           <span>Whodinees</span>
         </Link>
         <nav className="nav">
+          <NavLink to="/portraits">Portraits</NavLink>
           <NavLink to="/shop">Shop</NavLink>
           <NavLink to="/cart">
             Cart{count > 0 && <span className="cart-badge">{count}</span>}
@@ -36,7 +43,7 @@ function Footer() {
         <div>
           © {new Date().getFullYear()} Whodinees · <em>small objects, big magic</em>
         </div>
-        <div><Link to="/shop">Shop</Link></div>
+        <div><Link to="/portraits">Portraits</Link> · <Link to="/shop">Shop</Link></div>
       </div>
     </footer>
   )
@@ -49,6 +56,12 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/portraits" element={<PortraitsLanding />} />
+          <Route path="/portraits/upload" element={<PortraitUpload />} />
+          <Route path="/portraits/:id" element={<PortraitStatus />} />
+          <Route path="/portraits/:id/deposit" element={<PortraitDeposit />} />
+          <Route path="/portraits/:id/checkout" element={<PortraitCheckout />} />
+          <Route path="/portraits/:id/confirmation" element={<PortraitConfirmation />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:slug" element={<ProductPage />} />
           <Route path="/cart" element={<Cart />} />

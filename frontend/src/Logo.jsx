@@ -1,21 +1,48 @@
 import React from 'react'
 
+/**
+ * Whodinees logo — a stylized rounded "W" with two little pointy ears
+ * peeking over the top. Symmetric, clean, reads at 24px and up.
+ */
 export default function Logo({ size = 36 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Whodinees logo">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Whodinees logo"
+    >
       <defs>
         <linearGradient id="whodinees-g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#b388ff" />
           <stop offset="1" stopColor="#7c4dff" />
         </linearGradient>
       </defs>
+      {/* rounded square tile */}
       <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#whodinees-g)" />
-      <path d="M18 34 h28 l-4 18 a4 4 0 0 1 -4 3 h-12 a4 4 0 0 1 -4 -3 Z" fill="#fff" />
-      <rect x="16" y="30" width="32" height="6" rx="2" fill="#fff" />
-      <path d="M32 30 C 32 22 26 18 22 20 C 24 26 28 30 32 30 Z" fill="#fff" />
-      <path d="M32 30 C 32 22 38 18 42 20 C 40 26 36 30 32 30 Z" fill="#fff" />
-      <circle cx="32" cy="18" r="3.5" fill="#fff" />
-      <path d="M32 8 l1.5 3 3 1.5 -3 1.5 -1.5 3 -1.5 -3 -3 -1.5 3 -1.5 Z" fill="#fff" fillOpacity="0.9" />
+      {/* two little ears peeking over the top of the W */}
+      <path d="M16 20 L22 10 L24 20 Z" fill="#fff" />
+      <path d="M48 20 L42 10 L40 20 Z" fill="#fff" />
+      {/* stylized rounded "W": two linked U-curves */}
+      <path
+        d="M12 22
+           C 12 18, 20 18, 22 26
+           L 26 44
+           C 28 50, 30 50, 32 44
+           L 32 30
+           L 32 44
+           C 34 50, 36 50, 38 44
+           L 42 26
+           C 44 18, 52 18, 52 22"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* tiny nose dot between the humps */}
+      <circle cx="32" cy="36" r="2.2" fill="#fff" />
     </svg>
   )
 }

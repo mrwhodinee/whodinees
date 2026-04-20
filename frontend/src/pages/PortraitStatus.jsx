@@ -1,0 +1,152 @@
+import React, { useEffect, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { api } from '../api.js'
+
+// Lazy-load @google/model-viewer from CDN — no npm install needed.
+function ensureModelViewer() {
+  if (typeof window === 'undefined') return
+  if (window.__modelViewerLoaded) return
+  const s = document.createElement('script')
+  s.type = 'module'
+  s.src = 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js'
+  document.head.appendChild(s)
+  window.__modelViewerLoaded = true
+}
+
+function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
+  const status = (variant.status || '').toUpperCase()
+  const succeeded = status === 'SUCCEEDED' || status === 'SUCCESS' || status === 'COMPLETED'
+  const failed = ['FAILED','CANCELED','EXPIRED','ERROR'].includes(status)
+  const progress = variant.progress || 0
+
+  return (
+    <div className={`variant-card ${selected ? 'selected' : ''}`}>
+      <div className="variant-header">
+        <strong>Variant {index + 1}</strong>
+        <span className="variant-status">{status || 'PENDING'}</span>
+      </div>
+      <div className="variant-preview">
+        {succeeded && variant.glb_url ? (
+          <model-viewer
+            src={variant.glb_url}
+            alt={`Variant ${index + 1}`}
+            camera-controls
+            auto-rotate
+            shadow-intensity="0.8"
+            style={{ width: '100%', height: '240px', background: '#f4f0ff', borderRadius: 12 }}
+          />
+        ) : succeeded && variant.preview_url ? (
+          <img src={variant.preview_url} alt="" style={{width:'100%', borderRadius:12}} />
+        ) : failed ? (
+          <div className="variant-fail">Generation failed</div>
+        ) : (
+          <div className="variant-progress">
+            <div className="spinner" />
+            <div>Generating… {progress}%</div>
+          </div>
+        )}
+      </div>
+      {succeeded && (
+        <button
+          onClick={() => onPick(variant.task_id)}
+          disabled={disabled}
+          className={selected ? 'selected' : ''}
+        >
+          {selected ? '✓ Selected' : 'Pick this one'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+export default function PortraitStatus() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [portrait, setPortrait] = useState(null)
+  const [err, setErr] = useState('')
+  const [approving, setApproving] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState('')
+
+  useEffect(() => { ensureModelViewer() }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function tick() {
+      try {
+        const p = await api.getPortrait(id)
+        if (cancelled) return
+        setPortrait(p)
+        if (p.selected_variant_task_id) setSelectedTaskId(p.selected_variant_task_id)
+      } catch (e) { setErr(String(e.message || e)) }
+    }
+    tick()
+    const int = setInterval(tick, 8000)
+    return () => { cancelled = true; clearInterval(int) }
+  }, [id])
+
+  async function pick(taskId) {
+    setSelectedTaskId(taskId)
+  }
+
+  async function approve() {
+    if (!selectedTaskId) return
+    setApproving(true); setErr('')
+    try {
+      await api.approveVariant(id, selectedTaskId)
+      navigate(`/portraits/${id}/checkout`)
+    } catch (e) { setErr(String(e.message || e)); setApproving(false) }
+  }
+
+  if (err) return <section className="container page"><h1>Error</h1><div className="notice">{err}</div></section>
+  if (!portrait) return <section className="container page"><div className="loading">Loading…</div></section>
+
+  const variants = portrait.meshy_variants || []
+  const status = portrait.status
+
+  return (
+    <section className="container page">
+      <h1>Your portrait</h1>
+      <p style={{color:'var(--ink-soft)'}}>
+        {status === 'deposit_pending' && 'Waiting on deposit…'}
+        {status === 'generating' && 'Generating 3 variants. This usually takes 3-5 minutes. You can leave and come back — we\'ll email you when they\'re ready.'}
+        {status === 'awaiting_approval' && 'Pick your favorite variant below. You can rotate each one in 3D.'}
+        {status === 'approved' && 'Approved! Choose a material and size →'}
+        {status === 'ordered' && 'Order placed. Check your email.'}
+      </p>
+
+      {status === 'deposit_pending' && (
+        <Link className="button" to={`/portraits/${id}/deposit`}>Complete deposit →</Link>
+      )}
+
+      {variants.length > 0 && (
+        <div className="variant-grid">
+          {variants.map((v, i) => (
+            <VariantCard
+              key={v.task_id || i}
+              variant={v}
+              index={i}
+              selected={selectedTaskId === v.task_id}
+              onSelect={() => pick(v.task_id)}
+              onPick={pick}
+              disabled={status === 'ordered'}
+            />
+          ))}
+        </div>
+      )}
+
+      {(status === 'awaiting_approval' || status === 'approved') && selectedTaskId && status !== 'approved' && (
+        <div style={{marginTop:'1.5rem'}}>
+          <button onClick={approve} disabled={approving}>
+            {approving ? 'Approving…' : 'Approve & choose material →'}
+          </button>
+        </div>
+      )}
+
+      {status === 'approved' && (
+        <div style={{marginTop:'1.5rem'}}>
+          <Link className="button" to={`/portraits/${id}/checkout`}>Choose material & order →</Link>
+        </div>
+      )}
+    </section>
+  )
+}

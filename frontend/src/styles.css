@@ -204,3 +204,90 @@ form.checkout input:focus { outline: none; border-color: var(--accent); box-shad
 
 .success-hero { text-align: center; padding: 4rem 1rem; }
 .success-hero .big { font-size: 4rem; margin: 0; }
+
+/* ---- Portraits ---- */
+.button-ghost {
+  display: inline-block; padding: 0.75rem 1.25rem; border-radius: 999px;
+  background: transparent; color: var(--accent-deep); border: 2px solid var(--accent-deep);
+  font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.button-ghost:hover { background: var(--accent-soft); }
+
+.step-card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+.step-card .step-num {
+  display: inline-block; background: var(--accent-deep); color: #fff;
+  width: 2rem; height: 2rem; border-radius: 50%; text-align: center;
+  line-height: 2rem; font-weight: 700; margin-bottom: 0.5rem;
+}
+.step-card h3 { margin: 0.25rem 0; }
+.step-card p { color: var(--ink-soft); margin: 0; }
+
+.material-card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 1.2rem; text-align: center;
+}
+.material-card h3 { margin: 0 0 0.5rem; }
+.material-card .price-from { font-size: 1.1rem; }
+.material-card .price-from strong { font-size: 1.4rem; color: var(--accent-deep); }
+
+.variant-grid {
+  display: grid; gap: 1.25rem; margin: 2rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.variant-card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;
+  border: 2px solid transparent; transition: border-color 0.15s;
+}
+.variant-card.selected { border-color: var(--accent-deep); }
+.variant-header { display: flex; justify-content: space-between; align-items: center; }
+.variant-status {
+  font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.variant-preview { position: relative; min-height: 180px; }
+.variant-progress, .variant-fail {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 200px; background: var(--accent-soft); border-radius: 12px; gap: 0.5rem;
+  color: var(--ink-soft);
+}
+.variant-fail { color: #b00020; }
+.spinner {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid #ddd; border-top-color: var(--accent-deep);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.variant-card button {
+  padding: 0.6rem; border-radius: 10px; border: 1px solid var(--accent-deep);
+  background: #fff; color: var(--accent-deep); cursor: pointer; font-weight: 600;
+}
+.variant-card button:hover:not(:disabled) { background: var(--accent-soft); }
+.variant-card button.selected { background: var(--accent-deep); color: #fff; }
+
+.material-picker, .size-picker {
+  display: grid; gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.material-option, .size-option {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.8rem;
+  border: 2px solid #e5dcfb; border-radius: 12px; cursor: pointer;
+  background: #fff;
+}
+.material-option.selected, .size-option.selected {
+  border-color: var(--accent-deep); background: var(--accent-soft);
+}
+.material-option .price { color: var(--accent-deep); font-weight: 600; }
+.size-option { flex-direction: column; text-align: center; gap: 0.2rem; }
+.size-option small { color: var(--ink-soft); }
+.material-option input, .size-option input { accent-color: var(--accent-deep); }
+
+.photo-preview img { box-shadow: var(--shadow); }
+
+model-viewer {
+  display: block; width: 100%; border-radius: 12px;
+}

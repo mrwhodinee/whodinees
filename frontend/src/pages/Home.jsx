@@ -5,28 +5,31 @@ import ProductCard from '../components/ProductCard.jsx'
 
 export default function Home() {
   const [products, setProducts] = useState(null)
-  useEffect(() => {
-    api.listProducts().then(setProducts).catch(() => setProducts([]))
-  }, [])
-
+  useEffect(() => { api.listProducts().then(setProducts).catch(() => setProducts([])) }, [])
   const featured = (products || []).slice(0, 4)
 
   return (
     <>
       <section className="hero">
         <div className="container">
-          <div className="sparkles">✨ first drop — dinees are here</div>
-          <h1>small objects,<br/>big magic.</h1>
-          <p className="tagline">tiny sculptural things for your desk, your shelf, your life. designed by hand, 3D-printed to order.</p>
+          <div className="sparkles">✨ introducing Whodinees Portraits</div>
+          <h1>tiny figurines of your<br/>tiny best friend.</h1>
+          <p className="tagline">
+            Custom 3D pet portraits from your photo — in plastic, bronze, silver, or gold.
+          </p>
           <div className="ctas">
-            <Link className="button" to="/shop">Shop the dinees</Link>
+            <Link className="button" to="/portraits">Start your portrait →</Link>
+            <Link className="button-ghost" to="/shop">Shop the sculptural dinees</Link>
           </div>
-          <p className="coming-soon">🪴 functional planters coming soon</p>
+          <p className="coming-soon">$19 refundable deposit · 3 variants to pick from</p>
         </div>
       </section>
 
       <section className="container">
-        <h2>The first dinees</h2>
+        <h2>Also: small sculptural dinees</h2>
+        <p style={{color:'var(--ink-soft)'}}>
+          Our first drop — tiny sculptural things for your desk, shelf, your life. 3D-printed to order.
+        </p>
         {products === null && <div className="loading">Loading…</div>}
         {products !== null && featured.length === 0 && (
           <div className="empty">No products yet — check back soon.</div>
