@@ -1,14 +1,29 @@
 from django.contrib import admin
-from .models import Product, Order, OrderItem
+from .models import Product, Order, OrderItem, Category
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("display_order", "name", "slug", "live", "product_count")
+    list_editable = ("live",)
+    list_filter = ("live",)
+    search_fields = ("name", "slug", "tagline")
+    prepopulated_fields = {"slug": ("name",)}
+
+    def product_count(self, obj):
+        return obj.products.count()
+    product_count.short_description = "# products"
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "price", "in_stock", "created_at")
-    list_filter = ("category", "in_stock")
+    list_display = ("name", "category", "price", "featured", "display_order", "in_stock", "created_at")
+    list_editable = ("featured", "display_order")
+    list_filter = ("category", "featured", "in_stock")
     search_fields = ("name", "slug", "description")
     prepopulated_fields = {"slug": ("name",)}
     readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("category",)
 
 
 class OrderItemInline(admin.TabularInline):

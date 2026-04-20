@@ -1,9 +1,18 @@
 from rest_framework import serializers
-from .models import Product, Order, OrderItem
+from .models import Product, Order, OrderItem, Category
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name", "slug", "tagline", "live", "display_order"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
     image_url_resolved = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+    category_slug = serializers.SerializerMethodField()
+    category_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -13,7 +22,11 @@ class ProductSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "price",
-            "category",
+            "category",        # slug for backwards compat
+            "category_slug",
+            "category_name",
+            "featured",
+            "display_order",
             "in_stock",
             "image_url_resolved",
         ]
@@ -26,6 +39,15 @@ class ProductSerializer(serializers.ModelSerializer):
         if request and url.startswith("/"):
             return request.build_absolute_uri(url)
         return url
+
+    def get_category(self, obj):
+        return obj.category.slug if obj.category_id else ""
+
+    def get_category_slug(self, obj):
+        return obj.category.slug if obj.category_id else ""
+
+    def get_category_name(self, obj):
+        return obj.category.name if obj.category_id else ""
 
 
 class OrderItemInSerializer(serializers.Serializer):

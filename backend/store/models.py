@@ -4,12 +4,33 @@ from django.db import models
 from django.utils.text import slugify
 
 
-class Product(models.Model):
-    CATEGORY_CHOICES = [
-        ("planter", "Planter"),
-        ("other", "Other"),
-    ]
+class Category(models.Model):
+    """Product categories. Live=True ones show in nav & shop filter.
 
+    Use `display_order` for merchandising control (lower = earlier).
+    Placeholders (live=False) keep future categories known to the DB
+    without exposing them to shoppers yet.
+    """
+    name = models.CharField(max_length=80)
+    slug = models.SlugField(max_length=80, unique=True)
+    tagline = models.CharField(max_length=200, blank=True, default="")
+    live = models.BooleanField(
+        default=True,
+        help_text="If False, treated as a coming-soon placeholder and hidden from the main nav.",
+    )
+    display_order = models.PositiveIntegerField(default=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "name"]
+        verbose_name_plural = "categories"
+
+    def __str__(self):
+        return self.name
+
+
+class Product(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField(blank=True)
@@ -22,15 +43,48 @@ class Product(models.Model):
         max_length=500, blank=True, default="",
         help_text="Shapeways model id, URL, or local path to STL.",
     )
-    category = models.CharField(max_length=40, choices=CATEGORY_CHOICES, default="planter")
+    # FK to Category; nullable during migration, filled in by data migration.
+    category = models.ForeignKey(
+        Category,
+        related_name="products",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    featured = models.BooleanField(default=False, help_text="Highlight on home/shop.")
+    display_order = models.PositiveIntegerField(default=100, help_text="Lower shows first.")
     in_stock = models.BooleanField(default=True)
     meshy_task_id = models.CharField(max_length=120, blank=True, default="")
     shapeways_model_id = models.CharField(max_length=120, blank=True, default="")
+
+    # --- Phase 1: QC + real pricing -----------------------------------------
+    is_functional_planter = models.BooleanField(
+        default=False,
+        help_text="Passed the mesh QC as a usable planter (watertight or hollow with drainage & pot-fit).",
+    )
+    volume_cm3 = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Mesh volume in cm\u00b3 after QC-time scaling.",
+    )
+    qc_notes = models.TextField(blank=True, default="")
+    shapeways_print_cost = models.DecimalField(
+        max_digits=8, decimal_places=2, null=True, blank=True,
+        help_text="Per-unit print cost from Shapeways quote (or heuristic estimate).",
+    )
+    material = models.CharField(
+        max_length=80, blank=True, default="Nylon PA12 / Versatile Plastic",
+    )
+    pricing_source = models.CharField(
+        max_length=32, blank=True, default="",
+        help_text="'shapeways_quote' or 'estimated'.",
+    )
+    # ------------------------------------------------------------------------
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["display_order", "-created_at"]
 
     def __str__(self):
         return self.name

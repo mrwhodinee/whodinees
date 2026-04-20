@@ -17,3 +17,10 @@ stripe==15.0.1
 typing-extensions==4.15.0
 urllib3==2.6.3
 whitenoise==6.12.0
+
+# Phase 1 — mesh QC
+numpy==2.4.4
+trimesh==4.11.5
+rtree==1.4.1
+shapely==2.1.2
+manifold3d==3.4.1

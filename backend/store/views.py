@@ -13,11 +13,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Product, Order, OrderItem
+from .models import Product, Order, OrderItem, Category
 from .serializers import (
     ProductSerializer,
     OrderCreateSerializer,
     OrderReadSerializer,
+    CategorySerializer,
 )
 from .services import stripe_service, shapeways, email as email_service
 
@@ -30,7 +31,23 @@ class ProductListView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return Product.objects.filter(in_stock=True)
+        qs = Product.objects.filter(in_stock=True).select_related("category")
+        slug = self.request.query_params.get("category")
+        if slug:
+            qs = qs.filter(category__slug=slug)
+        return qs
+
+
+class CategoryListView(generics.ListAPIView):
+    serializer_class = CategorySerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = Category.objects.all()
+        if self.request.query_params.get("live") == "true":
+            qs = qs.filter(live=True)
+        return qs
 
 
 class ProductDetailView(generics.RetrieveAPIView):

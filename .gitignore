@@ -28,3 +28,14 @@ frontend/.env.local
 
 # Logs
 *.log
+
+# QC working dirs — mesh downloads & JSON reports (regeneratable)
+backend/qc_meshes/
+backend/qc_report/
+backend/qc_report.json
+
+# Safety net: never commit mesh binaries anywhere in the tree
+*.glb
+*.obj
+*.stl
+*.ply
