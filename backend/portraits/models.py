@@ -65,10 +65,12 @@ class PortraitOrder(models.Model):
     """An order for a physical print of an approved PetPortrait."""
 
     MATERIAL_CHOICES = [
-        ("plastic", "Plastic (Versatile Plastic)"),
-        ("bronze", "Bronze"),
+        ("plastic", "Plastic"),
         ("silver", "Sterling Silver"),
-        ("gold_14k", "14K Gold"),
+        ("gold_14k_yellow", "14K Yellow Gold"),
+        ("gold_14k_rose", "14K Rose Gold"),
+        ("gold_14k_white", "14K White Gold"),
+        ("gold_18k_yellow", "18K Yellow Gold"),
         ("platinum", "Platinum"),
     ]
 
@@ -89,11 +91,19 @@ class PortraitOrder(models.Model):
     material = models.CharField(max_length=16, choices=MATERIAL_CHOICES)
     size_mm = models.PositiveIntegerField(help_text="Longest dimension in millimeters")
 
-    retail_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    # Pricing breakdown (stored at time of order for investment documentation)
+    volume_cm3 = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    weight_grams = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    polycount = models.PositiveIntegerField(default=0)
+    complexity_tier = models.CharField(max_length=16, default="moderate")  # simple/moderate/complex
+    
+    spot_price_per_gram = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    material_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    shapeways_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     design_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
-    metal_spot_price_snapshot = models.JSONField(default=dict, blank=True)
-    shapeways_cost_estimate = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
-    estimated_metal_weight_g = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    retail_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    
+    pricing_breakdown_json = models.JSONField(default=dict, blank=True, help_text="Full snapshot for customer records")
 
     # Shipping
     shipping_name = models.CharField(max_length=120, blank=True, default="")

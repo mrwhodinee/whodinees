@@ -30,12 +30,16 @@ class PetPortraitSerializer(serializers.ModelSerializer):
 
 class PortraitOrderSerializer(serializers.ModelSerializer):
     token = serializers.UUIDField(read_only=True)
+    pricing_breakdown = serializers.JSONField(source="pricing_breakdown_json", read_only=True)
 
     class Meta:
         model = PortraitOrder
         fields = [
             "id", "token", "portrait", "material", "size_mm",
-            "retail_price", "design_fee", "estimated_metal_weight_g",
+            "volume_cm3", "weight_grams", "polycount", "complexity_tier",
+            "spot_price_per_gram", "material_cost", "shapeways_cost",
+            "design_fee", "retail_price",
+            "pricing_breakdown",
             "shipping_name", "shipping_address1", "shipping_address2",
             "shipping_city", "shipping_region", "shipping_postcode",
             "shipping_country",
@@ -43,7 +47,9 @@ class PortraitOrderSerializer(serializers.ModelSerializer):
             "status", "created_at",
         ]
         read_only_fields = [
-            "id", "token", "retail_price", "design_fee",
-            "estimated_metal_weight_g", "shapeways_order_id",
+            "id", "token", "volume_cm3", "weight_grams", "polycount",
+            "complexity_tier", "spot_price_per_gram", "material_cost",
+            "shapeways_cost", "design_fee", "retail_price",
+            "pricing_breakdown", "shapeways_order_id",
             "tracking_number", "status", "created_at",
         ]

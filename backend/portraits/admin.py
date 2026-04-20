@@ -22,4 +22,4 @@ class PortraitOrderAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "material", "size_mm")
     search_fields = ("portrait__customer_email", "stripe_payment_intent_id", "shapeways_order_id", "tracking_number")
-    readonly_fields = ("token", "metal_spot_price_snapshot", "created_at", "updated_at")
+    readonly_fields = ("token", "pricing_breakdown_json", "created_at", "updated_at")

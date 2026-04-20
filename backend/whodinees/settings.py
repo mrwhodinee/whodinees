@@ -163,6 +163,8 @@ SHAPEWAYS_CONSUMER_SECRET = env("SHAPEWAYS_CONSUMER_SECRET", default="")
 SENDGRID_API_KEY = env("SENDGRID_API_KEY", default="")
 SENDGRID_FROM_EMAIL = env("SENDGRID_FROM_EMAIL", default="orders@whodinees.com")
 
+METALS_DEV_API_KEY = env("METALS_DEV_API_KEY", default="")
+
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 BRAVE_API_KEY = env("BRAVE_API_KEY", default="")
 
