@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+echo "-----> Running post_compile hook: Django collectstatic"
+cd backend
+python manage.py collectstatic --noinput
+echo "-----> Done: $(ls staticfiles | wc -l) items in staticfiles/"

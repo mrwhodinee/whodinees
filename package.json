@@ -7,6 +7,6 @@
     "node": "20.x"
   },
   "scripts": {
-    "heroku-postbuild": "cd frontend && npm ci --include=dev && NODE_ENV=production npm run build"
+    "heroku-postbuild": "cd frontend && npm ci --include=dev && NODE_ENV=production npm run build && cd .. && echo 'frontend build done — Python buildpack will run collectstatic after installing deps'"
   }
 }
