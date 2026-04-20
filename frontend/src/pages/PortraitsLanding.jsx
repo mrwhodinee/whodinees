@@ -36,18 +36,18 @@ export default function PortraitsLanding() {
         <p style={{color:'var(--ink-soft)', marginBottom:'2rem'}}>From photo to 3D model in minutes.</p>
         <div className="showcase-grid">
           <ShowcaseExample 
-            photo="/showcase/golden-retriever.jpg" 
-            model="/showcase/golden-retriever_3d_preview.png"
+            photo="/static/showcase/golden-retriever.jpg" 
+            model="/static/showcase/golden-retriever_3d_preview.png"
             label="Golden Retriever"
           />
           <ShowcaseExample 
-            photo="/showcase/tabby-cat.jpg" 
-            model="/showcase/tabby-cat_3d_preview.png"
+            photo="/static/showcase/tabby-cat.jpg" 
+            model="/static/showcase/tabby-cat_3d_preview.png"
             label="Tabby Cat"
           />
           <ShowcaseExample 
-            photo="/showcase/corgi.jpg" 
-            model="/showcase/corgi_3d_preview.png"
+            photo="/static/showcase/corgi.jpg" 
+            model="/static/showcase/corgi_3d_preview.png"
             label="Corgi"
           />
         </div>
