@@ -16,7 +16,7 @@ import stripe
 
 from .models import PetPortrait, PortraitOrder
 from .serializers import PetPortraitSerializer, PortraitOrderSerializer
-from .services import photo_validator, meshy_portrait, pricing, metal_prices
+from .services import photo_validator, meshy_portrait, pricing, metal_prices, email as portrait_email
 
 logger = logging.getLogger(__name__)
 
@@ -411,6 +411,11 @@ def portrait_stripe_webhook(request):
         if order.status == "pending":
             order.status = "paid"
             order.save(update_fields=["status", "updated_at"])
+            # Send confirmation email with pricing breakdown
+            try:
+                portrait_email.send_portrait_order_confirmation(order)
+            except Exception as e:
+                logger.exception("Failed to send order confirmation email: %s", e)
             # TODO: submit to Shapeways once we have the approved GLB's model upload flow
 
     return HttpResponse(status=200)
