@@ -92,13 +92,15 @@ class Command(BaseCommand):
                 product.meshy_task_id = task_id or ""
                 self.stdout.write(f"   meshy task: {task_id}")
                 task = meshy.poll_until_done(task_id, timeout_s=timeout, interval_s=8)
-                # Save thumbnail
-                filename = f"{product.name.lower().replace(' ', '-')}-{uuid.uuid4().hex[:6]}.png"
-                dest = products_dir / filename
-                ok = meshy.download_thumbnail(task, str(dest))
-                if ok and dest.exists():
-                    with dest.open("rb") as f:
-                        product.image.save(filename, File(f), save=False)
+                # Prefer remote thumbnail URL (avoids Heroku ephemeral filesystem).
+                thumb = task.get("thumbnail_url") or task.get("texture_image_url") or ""
+                if not thumb:
+                    renders = task.get("rendered_image_urls") or {}
+                    if isinstance(renders, dict) and renders:
+                        thumb = next(iter(renders.values()))
+                if thumb:
+                    product.image_url = thumb
+                    self.stdout.write(f"   thumb: {thumb[:80]}...")
                 else:
                     self._attach_placeholder(product, products_dir, name)
                     warnings.append(f"{name}: Meshy OK but no thumbnail")
@@ -130,28 +132,18 @@ class Command(BaseCommand):
 
     @staticmethod
     def _attach_placeholder(product: Product, products_dir: Path, name: str) -> None:
-        """Generate a minimal 512x512 PNG placeholder with the product name."""
-        from PIL import Image, ImageDraw, ImageFont
-        img = Image.new("RGB", (512, 512), (240, 232, 255))  # pale lilac
-        draw = ImageDraw.Draw(img)
-        # accent circle
-        draw.ellipse((96, 96, 416, 416), fill=(199, 175, 255))
-        # inner circle
-        draw.ellipse((160, 160, 352, 352), fill=(138, 92, 255))
-        # text
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
-        except Exception:
-            font = ImageFont.load_default()
-        text = name
-        try:
-            bbox = draw.textbbox((0, 0), text, font=font)
-            w = bbox[2] - bbox[0]
-        except Exception:
-            w = len(text) * 14
-        draw.text(((512 - w) / 2, 236), text, fill=(255, 255, 255), font=font)
-        filename = f"placeholder-{name.lower().replace(' ', '-')}-{uuid.uuid4().hex[:6]}.png"
-        dest = products_dir / filename
-        img.save(dest, format="PNG")
-        with dest.open("rb") as f:
-            product.image.save(filename, File(f), save=False)
+        """Attach an inline SVG data URL as the placeholder image (filesystem-free)."""
+        import base64
+        # Short, safe display string
+        safe = (name or "dinee").replace("<", "").replace(">", "").replace("&", "&amp;")
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#efe7ff"/><stop offset="1" stop-color="#c7afff"/>
+  </linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <circle cx="256" cy="256" r="160" fill="#8a5cff"/>
+  <circle cx="256" cy="256" r="110" fill="#fff"/>
+  <text x="256" y="266" text-anchor="middle" font-family="Inter, sans-serif" font-size="28" font-weight="700" fill="#6b3dff">{safe}</text>
+</svg>'''
+        b64 = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+        product.image_url = f"data:image/svg+xml;base64,{b64}"
