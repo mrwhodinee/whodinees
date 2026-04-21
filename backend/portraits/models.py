@@ -89,7 +89,7 @@ class PortraitOrder(models.Model):
 
     portrait = models.ForeignKey(PetPortrait, on_delete=models.PROTECT, related_name="orders")
     material = models.CharField(max_length=16, choices=MATERIAL_CHOICES)
-    size_mm = models.PositiveIntegerField(help_text="Longest dimension in millimeters")
+    size_mm = models.PositiveIntegerField(default=40, help_text="Longest dimension in millimeters")
 
     # Pricing breakdown (stored at time of order for investment documentation)
     volume_cm3 = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))

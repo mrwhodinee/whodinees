@@ -57,6 +57,38 @@ def create_portrait(request):
         return Response({"detail": "photo is required"}, status=400)
     if pet_type not in dict(PetPortrait.PET_TYPES):
         return Response({"detail": "Invalid pet_type"}, status=400)
+    
+    # Strict file validation BEFORE saving to disk
+    # 1. Check file size
+    if photo.size > 15 * 1024 * 1024:  # 15MB
+        return Response({"detail": f"File too large ({photo.size // 1024 // 1024}MB). Maximum 15MB."}, status=400)
+    if photo.size < 100 * 1024:  # 100KB
+        return Response({"detail": f"File too small ({photo.size // 1024}KB). Minimum 100KB for quality."}, status=400)
+    
+    # 2. Check content type
+    allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if photo.content_type not in allowed_types:
+        return Response({"detail": f"Invalid file type: {photo.content_type}. Allowed: JPEG, PNG, WebP."}, status=400)
+    
+    # 3. Validate it's actually an image by trying to open with Pillow
+    try:
+        from PIL import Image
+        img = Image.open(photo)
+        img.verify()  # Checks if file is corrupt
+        # Re-open after verify (verify() closes the file)
+        photo.seek(0)
+        img = Image.open(photo)
+        width, height = img.size
+        
+        # Check minimum dimensions
+        if min(width, height) < 1400:
+            return Response({
+                "detail": f"Image too small ({width}×{height}px). Minimum 1400px on shortest side."
+            }, status=400)
+    except Exception as e:
+        return Response({"detail": f"Invalid or corrupt image file: {e}"}, status=400)
+    finally:
+        photo.seek(0)  # Reset for saving
 
     portrait = PetPortrait.objects.create(
         customer_email=email,

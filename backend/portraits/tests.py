@@ -192,6 +192,7 @@ class OrderModelTest(TestCase):
         order = PortraitOrder.objects.create(
             portrait=self.portrait,
             material='gold_14k_yellow',
+            size_mm=40,  # Now required (or uses default)
             spot_price_per_gram=Decimal('72.50'),
             pricing_breakdown_json={
                 'spot_price_per_gram': 72.50,
@@ -265,10 +266,13 @@ class APIEndpointTest(TestCase):
     
     def test_upload_accepts_valid_image(self):
         """POST /api/portraits/ should accept valid image files."""
-        # Create valid test image
-        img = Image.new('RGB', (1500, 1500), color='red')
+        # Create valid test image with enough detail to be >100KB
+        import numpy as np
+        # Create random noise pattern to increase file size
+        arr = np.random.randint(0, 256, (1600, 1600, 3), dtype=np.uint8)
+        img = Image.fromarray(arr)
         img_io = io.BytesIO()
-        img.save(img_io, 'JPEG')
+        img.save(img_io, 'JPEG', quality=95)
         img_io.seek(0)
         
         uploaded_file = SimpleUploadedFile(
@@ -284,7 +288,9 @@ class APIEndpointTest(TestCase):
             'photo': uploaded_file,
         })
         
-        self.assertIn(response.status_code, [200, 201])
+        if response.status_code != 201:
+            print(f"Response: {response.status_code}, {response.json()}")
+        self.assertEqual(response.status_code, 201)
     
     def test_upload_rejects_oversized_file(self):
         """POST /api/portraits/ should reject files over 15MB."""
