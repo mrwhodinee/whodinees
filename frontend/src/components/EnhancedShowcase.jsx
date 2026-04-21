@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import BeforeAfterSlider from './BeforeAfterSlider'
-import Model3DViewer from './Model3DViewer'
 
 const MATERIAL_OPTIONS = [
   { key: 'plastic', label: 'Plastic', price_key: 'plastic' },
@@ -11,7 +10,7 @@ const MATERIAL_OPTIONS = [
 
 export default function EnhancedShowcase({ photo, model, glbUrl, label, pricing }) {
   const [selectedMaterial, setSelectedMaterial] = useState('silver')
-  const [viewMode, setViewMode] = useState('slider') // 'slider' or '3d'
+  // Always use slider mode since we don't have GLB files yet
 
   const isPreciousMetal = selectedMaterial !== 'plastic'
   const materialPricing = pricing?.materials?.[selectedMaterial]
@@ -19,69 +18,10 @@ export default function EnhancedShowcase({ photo, model, glbUrl, label, pricing 
   return (
     <div className="enhanced-showcase-item">
       <div className="showcase-viewer">
-        {viewMode === 'slider' ? (
-          <BeforeAfterSlider beforeImg={photo} afterImg={model} label={label} />
-        ) : (
-          glbUrl ? (
-            <Model3DViewer 
-              modelUrl={glbUrl} 
-              material={selectedMaterial}
-              showParticles={isPreciousMetal}
-            />
-          ) : (
-            <div style={{ 
-              width: '100%', 
-              height: '400px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              backgroundColor: '#f5f5f5',
-              borderRadius: '12px',
-              color: '#999'
-            }}>
-              3D model not available
-            </div>
-          )
-        )}
+        <BeforeAfterSlider beforeImg={photo} afterImg={model} label={label} />
       </div>
 
-      <div className="view-mode-toggle" style={{ 
-        display: 'flex', 
-        gap: '8px', 
-        marginTop: '12px',
-        justifyContent: 'center'
-      }}>
-        <button
-          onClick={() => setViewMode('slider')}
-          className={viewMode === 'slider' ? 'active' : ''}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: viewMode === 'slider' ? '2px solid #8a5cff' : '1px solid #ddd',
-            backgroundColor: viewMode === 'slider' ? '#f9f7ff' : '#fff',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px'
-          }}
-        >
-          Compare
-        </button>
-        <button
-          onClick={() => setViewMode('3d')}
-          className={viewMode === '3d' ? 'active' : ''}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '8px',
-            border: viewMode === '3d' ? '2px solid #8a5cff' : '1px solid #ddd',
-            backgroundColor: viewMode === '3d' ? '#f9f7ff' : '#fff',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px'
-          }}
-        >
-          3D View
-        </button>
-      </div>
+
 
       <div className="material-switcher" style={{ 
         marginTop: '16px',
