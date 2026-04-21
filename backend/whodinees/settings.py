@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "store",
     "portraits",
+    "marketing",
 ]
 
 MIDDLEWARE = [
@@ -164,6 +165,12 @@ SENDGRID_API_KEY = env("SENDGRID_API_KEY", default="")
 SENDGRID_FROM_EMAIL = env("SENDGRID_FROM_EMAIL", default="orders@whodinees.com")
 
 METALS_DEV_API_KEY = env("METALS_DEV_API_KEY", default="")
+
+# Instagram API
+INSTAGRAM_ACCESS_TOKEN = env("INSTAGRAM_ACCESS_TOKEN", default="")
+INSTAGRAM_ACCOUNT_ID = env("INSTAGRAM_ACCOUNT_ID", default="")
+FACEBOOK_APP_ID = env("FACEBOOK_APP_ID", default="")
+FACEBOOK_APP_SECRET = env("FACEBOOK_APP_SECRET", default="")
 
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 BRAVE_API_KEY = env("BRAVE_API_KEY", default="")
