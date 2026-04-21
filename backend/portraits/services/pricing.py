@@ -65,9 +65,12 @@ def compute_all_pricing() -> dict:
         
         materials_info[material_key] = {
             "design_fee": pricing["design_fee"],
+            "ai_processing_fee": pricing["ai_processing_fee"],
+            "platform_fee": pricing["platform_fee"],
             "typical_weight_g": pricing["weight_grams"],
             "spot_price_per_gram": pricing["spot_price_per_gram"],
             "typical_material_cost": pricing["material_cost"],
+            "typical_shapeways_cost": pricing["shapeways_cost"],
             "typical_total": pricing["total"],
         }
     
