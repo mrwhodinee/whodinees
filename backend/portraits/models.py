@@ -97,10 +97,18 @@ class PortraitOrder(models.Model):
     polycount = models.PositiveIntegerField(default=0)
     complexity_tier = models.CharField(max_length=16, default="moderate")  # simple/moderate/complex
     
+    # Live market data at time of order
     spot_price_per_gram = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    spot_price_date = models.DateTimeField(null=True, blank=True, help_text="When spot price was fetched")
+    
+    # Line item costs
     material_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
-    shapeways_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    shapeways_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"), help_text="Production & casting")
     design_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    ai_processing_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("15.00"), help_text="Meshy AI model generation")
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"), help_text="Platform & processing (8% of subtotal)")
+    
+    # Total
     retail_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     
     pricing_breakdown_json = models.JSONField(default=dict, blank=True, help_text="Full snapshot for customer records")

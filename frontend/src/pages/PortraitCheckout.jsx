@@ -165,16 +165,12 @@ export default function PortraitCheckout() {
           {!loadingPrice && priceBreakdown && (
             <div className="price-breakdown">
               <div className="breakdown-row">
-                <span>Material:</span>
-                <strong>{MATERIAL_LABEL[material]}</strong>
-              </div>
-              <div className="breakdown-row">
-                <span>Weight:</span>
-                <span>{priceBreakdown.weight_grams}g</span>
+                <span>Material weight:</span>
+                <strong>{priceBreakdown.weight_grams}g</strong>
               </div>
               {priceBreakdown.spot_price_per_gram > 0 && (
                 <div className="breakdown-row">
-                  <span>Spot price:</span>
+                  <span>{priceBreakdown.metal_name} spot price:</span>
                   <span>${priceBreakdown.spot_price_per_gram}/g (live)</span>
                 </div>
               )}
@@ -182,23 +178,34 @@ export default function PortraitCheckout() {
                 <span>Material cost:</span>
                 <span>${priceBreakdown.material_cost}</span>
               </div>
+              <div style={{borderTop:'1px solid var(--border)', margin:'0.75rem 0'}}></div>
               <div className="breakdown-row">
-                <span>Production & casting:</span>
+                <span>Production & casting (Shapeways):</span>
                 <span>${priceBreakdown.shapeways_cost}</span>
               </div>
+              <div style={{borderTop:'1px solid var(--border)', margin:'0.75rem 0'}}></div>
               <div className="breakdown-row">
-                <span>Design fee ({priceBreakdown.complexity}):</span>
+                <span>Design fee:</span>
                 <span>${priceBreakdown.design_fee}</span>
               </div>
+              <div className="breakdown-row">
+                <span>AI model generation:</span>
+                <span>${priceBreakdown.ai_processing_fee}</span>
+              </div>
+              <div className="breakdown-row">
+                <span>Platform & processing:</span>
+                <span>${priceBreakdown.platform_fee}</span>
+              </div>
+              <div style={{borderTop:'1px solid var(--border)', margin:'0.75rem 0'}}></div>
               <div className="breakdown-row total">
                 <span>Total:</span>
                 <strong>${priceBreakdown.total}</strong>
               </div>
-              {material !== 'plastic' && (
-                <p style={{fontSize:'0.85rem', color:'var(--ink-soft)', marginTop:'1rem'}}>
-                  Precious metal prices update daily. Your price is locked at checkout.
-                </p>
-              )}
+              <p style={{fontSize:'0.85rem', color:'var(--ink-soft)', marginTop:'1rem', lineHeight:'1.4'}}>
+                {material !== 'plastic' 
+                  ? `Your price includes live ${priceBreakdown.metal_name} spot price on ${new Date().toLocaleDateString()}, Shapeways production and casting, AI model generation from your photo, and our platform fee. The metal value of your piece reflects today's market rate.`
+                  : 'Your price includes Shapeways production, AI model generation from your photo, design work, and our platform fee.'}
+              </p>
             </div>
           )}
         </div>

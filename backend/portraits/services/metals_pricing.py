@@ -32,10 +32,14 @@ GOLD_PURITY = {
 }
 
 DESIGN_FEE_TIERS = {
-    "simple": 25,
-    "moderate": 45,
-    "complex": 75,
+    "simple": 35,
+    "moderate": 65,
+    "complex": 95,
 }
+
+# Fixed fees
+AI_PROCESSING_FEE = 15.00  # Meshy AI conversion cost + margin
+PLATFORM_FEE_PERCENT = 0.08  # 8% of subtotal (material + Shapeways)
 
 
 def _get_api_key() -> str:
@@ -156,51 +160,61 @@ def calculate_full_pricing(
     volume_cm3: float,
     polycount: int,
     material: str,
-    shapeways_production_cost: float = 0.0,
+    shapeways_production_cost: float = 48.00,
 ) -> dict:
-    """Calculate complete pricing breakdown.
+    """Calculate complete pricing breakdown with all fees.
     
-    Returns:
-        {
-            "material": "silver",
-            "volume_cm3": 0.85,
-            "weight_grams": 8.81,
-            "polycount": 25000,
-            "complexity": "moderate",
-            "spot_price_per_gram": 0.87,
-            "material_cost": 7.66,
-            "shapeways_cost": 48.00,
-            "design_fee": 45.00,
-            "total": 100.66
-        }
+    Returns dict with:
+        - material, volume, weight, polycount, complexity
+        - spot_price_per_gram, material_cost
+        - shapeways_cost, design_fee, ai_fee, platform_fee
+        - subtotal, total
     """
+    import datetime
+    
     spot_prices = get_spot_prices()
     weight = calculate_material_weight(volume_cm3, material)
     material_cost = calculate_material_cost(weight, material, spot_prices)
     complexity = determine_complexity_tier(polycount)
     design_fee = get_design_fee(complexity)
     
+    # Fixed AI processing fee
+    ai_fee = AI_PROCESSING_FEE
+    
+    # Platform fee: 8% of (material cost + Shapeways cost)
+    subtotal_for_platform = material_cost + shapeways_production_cost
+    platform_fee = subtotal_for_platform * PLATFORM_FEE_PERCENT
+    
+    # Total
+    total = material_cost + shapeways_production_cost + design_fee + ai_fee + platform_fee
+    
     # Get relevant spot price for display
     if material == "silver":
         spot_display = spot_prices["silver"]
+        metal_name = "Silver"
     elif material.startswith("gold"):
         spot_display = spot_prices["gold"]
+        metal_name = "Gold"
     elif material == "platinum":
         spot_display = spot_prices["platinum"]
+        metal_name = "Platinum"
     else:
         spot_display = 0.0
-    
-    total = material_cost + shapeways_production_cost + design_fee
+        metal_name = material.title()
     
     return {
         "material": material,
+        "metal_name": metal_name,
         "volume_cm3": round(volume_cm3, 2),
         "weight_grams": round(weight, 2),
         "polycount": polycount,
         "complexity": complexity,
         "spot_price_per_gram": round(spot_display, 2),
+        "spot_price_date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "material_cost": round(material_cost, 2),
         "shapeways_cost": round(shapeways_production_cost, 2),
         "design_fee": round(design_fee, 2),
+        "ai_processing_fee": round(ai_fee, 2),
+        "platform_fee": round(platform_fee, 2),
         "total": round(total, 2),
     }

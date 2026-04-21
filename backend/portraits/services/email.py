@@ -56,32 +56,50 @@ def send_portrait_order_confirmation(order) -> bool:
     material_name = MATERIAL_LABEL.get(order.material, order.material)
     
     # Build pricing breakdown HTML
+    metal_name = ""
+    if order.material == "silver":
+        metal_name = "Silver"
+    elif order.material.startswith("gold"):
+        metal_name = "Gold"
+    elif order.material == "platinum":
+        metal_name = "Platinum"
+    
     breakdown_rows = f"""
-        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Material:</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{material_name}</strong></td></tr>
-        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Weight:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{order.weight_grams}g</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Material weight:</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{order.weight_grams}g</strong></td></tr>
     """
     
     if order.spot_price_per_gram > 0:
         breakdown_rows += f"""
-        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Spot price at order:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.spot_price_per_gram}/g (live market price)</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">{metal_name} spot price:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.spot_price_per_gram}/g (live)</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Material cost:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.material_cost}</td></tr>
+        """
+    else:
+        breakdown_rows += f"""
         <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Material cost:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.material_cost}</td></tr>
         """
     
     breakdown_rows += f"""
-        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Production & casting:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.shapeways_cost}</td></tr>
-        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Design fee ({order.complexity_tier}):</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.design_fee}</td></tr>
+        <tr style="background: #fafafa;"><td colspan="2" style="padding: 4px;"></td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Production & casting (Shapeways):</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.shapeways_cost}</td></tr>
+        <tr style="background: #fafafa;"><td colspan="2" style="padding: 4px;"></td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Design fee:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.design_fee}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">AI model generation:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.ai_processing_fee}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Platform & processing:</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${order.platform_fee}</td></tr>
+        <tr style="background: #fafafa;"><td colspan="2" style="padding: 4px;"></td></tr>
         <tr style="font-weight: 700; font-size: 1.1em;"><td style="padding: 12px 8px; border-top: 2px solid #8a5cff;">Total:</td><td style="padding: 12px 8px; border-top: 2px solid #8a5cff;">${order.retail_price} USD</td></tr>
     """
     
+    from django.utils import timezone
+    order_date = order.spot_price_date or order.created_at or timezone.now()
+    
     investment_note = ""
     if order.material != "plastic" and order.spot_price_per_gram > 0:
-        investment_note = """
+        investment_note = f"""
         <div style="background: #f9f7ff; padding: 16px; border-radius: 12px; margin-top: 24px;">
-            <h3 style="margin: 0 0 8px; color: #8a5cff;">Investment Documentation</h3>
-            <p style="margin: 0; color: #5a527a; font-size: 14px;">
-                Your precious metal piece was purchased at live spot market price on the date of this order.
-                This confirmation serves as documentation of the material value at time of purchase.
-                Spot prices are updated daily and locked at checkout to ensure transparency.
+            <p style="margin: 0; color: #5a527a; font-size: 14px; line-height: 1.6;">
+                Your price includes live {metal_name} spot price on {order_date.strftime('%B %d, %Y')}, 
+                Shapeways production and casting, AI model generation from your photo, and our platform fee. 
+                The metal value of your piece reflects today's market rate.
             </p>
         </div>
         """

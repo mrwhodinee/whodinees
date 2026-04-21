@@ -275,6 +275,7 @@ def create_portrait_order(request, portrait_id: int):
         return Response({"detail": f"Pricing calculation failed: {e}"}, status=500)
 
     # Create order with full pricing breakdown
+    from django.utils import timezone
     order = PortraitOrder.objects.create(
         portrait=portrait,
         material=material,
@@ -284,9 +285,12 @@ def create_portrait_order(request, portrait_id: int):
         polycount=breakdown["polycount"],
         complexity_tier=breakdown["complexity"],
         spot_price_per_gram=Decimal(str(breakdown["spot_price_per_gram"])),
+        spot_price_date=timezone.now(),
         material_cost=Decimal(str(breakdown["material_cost"])),
         shapeways_cost=Decimal(str(breakdown["shapeways_cost"])),
         design_fee=Decimal(str(breakdown["design_fee"])),
+        ai_processing_fee=Decimal(str(breakdown["ai_processing_fee"])),
+        platform_fee=Decimal(str(breakdown["platform_fee"])),
         retail_price=Decimal(str(breakdown["total"])),
         pricing_breakdown_json=breakdown,
         shipping_name=request.data.get("shipping_name", "") or "",
