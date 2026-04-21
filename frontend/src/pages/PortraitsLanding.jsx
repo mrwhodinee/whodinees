@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
+import EnhancedShowcase from '../components/EnhancedShowcase'
 
 const MATERIAL_LABEL = {
   plastic: 'Plastic',
@@ -28,28 +29,34 @@ export default function PortraitsLanding() {
           <div className="ctas">
             <Link className="button" to="/portraits/upload">Start your portrait →</Link>
           </div>
-          <p className="coming-soon">$19 refundable deposit · 3 variants to choose from</p>
+          <p className="coming-soon">$19 non-refundable deposit · You keep the digital files</p>
         </div>
       </section>
 
       <section className="container" style={{marginTop:'3rem'}}>
-        <h2>See examples</h2>
-        <p style={{color:'var(--ink-soft)', marginBottom:'2rem'}}>From photo to 3D model in minutes.</p>
-        <div className="showcase-grid">
-          <ShowcaseExample 
+        <h2>Your pet. Immortalized in precious metal. Priced at today's market rate — forever.</h2>
+        <p style={{color:'var(--ink-soft)', marginBottom:'2rem', fontSize:'18px', maxWidth:'800px', margin:'0 auto 2rem'}}>From photo to 3D model in minutes. See the transformation yourself.</p>
+        <div className="showcase-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:'2rem'}}>
+          <EnhancedShowcase
             photo="/static/showcase/golden-retriever.jpg" 
             model="/static/showcase/golden-retriever_3d_preview.png"
+            glbUrl="/static/showcase/golden-retriever.glb"
             label="Golden Retriever"
+            pricing={pricing}
           />
-          <ShowcaseExample 
+          <EnhancedShowcase
             photo="/static/showcase/tabby-cat.jpg" 
             model="/static/showcase/tabby-cat_3d_preview.png"
+            glbUrl="/static/showcase/tabby-cat.glb"
             label="Tabby Cat"
+            pricing={pricing}
           />
-          <ShowcaseExample 
+          <EnhancedShowcase
             photo="/static/showcase/corgi.jpg" 
             model="/static/showcase/corgi_3d_preview.png"
+            glbUrl="/static/showcase/corgi.glb"
             label="Corgi"
+            pricing={pricing}
           />
         </div>
       </section>
@@ -58,9 +65,9 @@ export default function PortraitsLanding() {
         <h2>How it works</h2>
         <div className="grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))'}}>
           <Step n="1" title="Upload a premium photo">Sharp, well-lit, face clearly visible. We reject blurry or low-res photos — 8/10+ quality only.</Step>
-          <Step n="2" title="Pay $19 deposit">Non-refundable (covers AI cost). Generates 3 variants + you keep the digital files.</Step>
+          <Step n="2" title="Pay $19 deposit">Non-refundable (covers AI cost). We generate your custom 3D model from your photos and hold it securely until your order is complete.</Step>
           <Step n="3" title="Review & approve">View your 3D models, pick your favorite. Decide if you want a physical print.</Step>
-          <Step n="4" title="Choose material & order">Plastic, silver, 14K/18K gold (3 variants), or platinum. Live spot pricing + transparent breakdown.</Step>
+          <Step n="4" title="Choose material & order">Plastic, silver, 14K/18K gold, or platinum. Live spot pricing + transparent breakdown.</Step>
         </div>
       </section>
 
@@ -109,21 +116,4 @@ function Step({ n, title, children }) {
   )
 }
 
-function ShowcaseExample({ photo, model, label }) {
-  return (
-    <div className="showcase-item">
-      <div className="showcase-pair">
-        <div className="showcase-img">
-          <img src={photo} alt={`${label} photo`} />
-          <div className="showcase-label">Original Photo</div>
-        </div>
-        <div className="showcase-arrow">→</div>
-        <div className="showcase-img">
-          <img src={model} alt={`${label} 3D model`} />
-          <div className="showcase-label">3D Model</div>
-        </div>
-      </div>
-      <div className="showcase-caption">{label}</div>
-    </div>
-  )
-}
+

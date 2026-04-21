@@ -76,7 +76,7 @@ export default function PortraitDeposit() {
     return (
       <section className="container page">
         <h1>Deposit received</h1>
-        <p>We're generating your 3 variants. This takes a few minutes.</p>
+        <p>We're generating your custom 3D model. This takes a few minutes.</p>
         <Link className="button" to={`/portraits/${id}`}>View progress →</Link>
       </section>
     )
@@ -93,7 +93,7 @@ export default function PortraitDeposit() {
       <div style={{background:'var(--accent-soft)', padding:'1rem', borderRadius:'12px', margin:'1rem 0', fontSize:'0.9rem'}}>
         <p style={{margin:'0 0 0.5rem', fontWeight:600}}>What you get:</p>
         <ul style={{margin:0, paddingLeft:'1.25rem', color:'var(--ink-soft)'}}>
-          <li>3 unique 3D model variants of your pet</li>
+          <li>Your custom 3D model (you keep the digital files)</li>
           <li>Digital files to keep (GLB format) — yours regardless</li>
           <li>Review & approve before buying physical print</li>
           <li>$19 deposit is <strong>non-refundable</strong> (covers AI generation cost)</li>

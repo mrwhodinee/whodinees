@@ -14,7 +14,7 @@ export default function Home() {
         <div className="ctas">
           <Link className="button" to="/portraits">Start your portrait →</Link>
         </div>
-        <p className="coming-soon">$19 refundable deposit · 3 variants to choose from</p>
+        <p className="coming-soon">$19 non-refundable deposit · You keep the digital files</p>
       </div>
     </section>
   )

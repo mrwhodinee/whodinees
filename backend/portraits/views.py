@@ -426,7 +426,7 @@ def portrait_stripe_webhook(request):
 
         portrait.deposit_paid = True
         try:
-            task_ids = meshy_portrait.submit_variants(portrait.uploaded_photo.path, n=3)
+            task_ids = meshy_portrait.submit_variants(portrait.uploaded_photo.path, n=1)
         except Exception as e:
             logger.exception("Meshy variant submission failed: %s", e)
             task_ids = []

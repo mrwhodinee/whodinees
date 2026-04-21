@@ -22,7 +22,7 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
   return (
     <div className={`variant-card ${selected ? 'selected' : ''}`}>
       <div className="variant-header">
-        <strong>Variant {index + 1}</strong>
+        <strong>Your Model</strong>
         <span className="variant-status">{status || 'PENDING'}</span>
       </div>
       <div className="variant-preview">
@@ -52,7 +52,7 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
           disabled={disabled}
           className={selected ? 'selected' : ''}
         >
-          {selected ? '✓ Selected' : 'Pick this one'}
+          {selected ? '✓ Ready to order' : 'Select this model'}
         </button>
       )}
     </div>
@@ -108,8 +108,8 @@ export default function PortraitStatus() {
       <h1>Your portrait</h1>
       <p style={{color:'var(--ink-soft)'}}>
         {status === 'deposit_pending' && 'Waiting on deposit…'}
-        {status === 'generating' && 'Generating 3 variants. This usually takes 3-5 minutes. You can leave and come back — we\'ll email you when they\'re ready.'}
-        {status === 'awaiting_approval' && 'Pick your favorite variant below. You can rotate each one in 3D.'}
+        {status === 'generating' && 'Generating your 3D model. This usually takes 3-5 minutes. You can leave and come back — we\'ll email you when it\'s ready.'}
+        {status === 'awaiting_approval' && 'Your model is ready. Review it below — you can rotate it in 3D.'}
         {status === 'approved' && 'Approved! Choose a material and size →'}
         {status === 'ordered' && 'Order placed. Check your email.'}
       </p>
@@ -137,7 +137,7 @@ export default function PortraitStatus() {
       {(status === 'awaiting_approval' || status === 'approved') && selectedTaskId && status !== 'approved' && (
         <div style={{marginTop:'1.5rem'}}>
           <button onClick={approve} disabled={approving}>
-            {approving ? 'Approving…' : 'Approve & choose material →'}
+            {approving ? 'Confirming…' : 'Confirm & choose material →'}
           </button>
         </div>
       )}
