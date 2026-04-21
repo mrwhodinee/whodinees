@@ -62,8 +62,8 @@ def create_portrait(request):
     # 1. Check file size
     if photo.size > 15 * 1024 * 1024:  # 15MB
         return Response({"detail": f"File too large ({photo.size // 1024 // 1024}MB). Maximum 15MB."}, status=400)
-    if photo.size < 100 * 1024:  # 100KB
-        return Response({"detail": f"File too small ({photo.size // 1024}KB). Minimum 100KB for quality."}, status=400)
+    if photo.size < 80 * 1024:  # 80KB
+        return Response({"detail": f"File too small ({photo.size // 1024}KB). Minimum 80KB for quality."}, status=400)
     
     # 2. Check content type
     allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -80,10 +80,10 @@ def create_portrait(request):
         img = Image.open(photo)
         width, height = img.size
         
-        # Check minimum dimensions
-        if min(width, height) < 1400:
+        # Check minimum dimensions (1200px realistic for modern phone cameras)
+        if min(width, height) < 1200:
             return Response({
-                "detail": f"Image too small ({width}×{height}px). Minimum 1400px on shortest side."
+                "detail": f"Image too small ({width}×{height}px). Minimum 1200px on shortest side."
             }, status=400)
     except Exception as e:
         return Response({"detail": f"Invalid or corrupt image file: {e}"}, status=400)

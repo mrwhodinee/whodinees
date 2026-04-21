@@ -9,10 +9,10 @@ from typing import Tuple, List
 
 logger = logging.getLogger(__name__)
 
-MIN_SHORTEST_SIDE_PX = 1400  # Raised for premium quality
+MIN_SHORTEST_SIDE_PX = 1200  # Premium quality but realistic for phone photos
 MAX_FILE_BYTES = 15 * 1024 * 1024
-MIN_FILE_BYTES = 100 * 1024  # 100KB minimum
-MIN_ACCEPTABLE_SCORE = 80  # 8/10 quality gate
+MIN_FILE_BYTES = 80 * 1024  # 80KB minimum
+MIN_ACCEPTABLE_SCORE = 70  # 7/10 quality gate - strict but achievable
 
 
 def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
@@ -59,14 +59,14 @@ def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
         img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY) if img_color is not None else None
         
         if img_gray is not None:
-            # 1. Blur check (Laplacian variance)
+            # 1. Blur check (Laplacian variance) - adjusted for real-world photos
             lap_var = cv2.Laplacian(img_gray, cv2.CV_64F).var()
-            if lap_var < 100:
+            if lap_var < 50:
                 issues.append("Photo is too blurry. Please upload a sharp, well-focused image.")
                 score -= 40
-            elif lap_var < 200:
+            elif lap_var < 100:
                 issues.append("Photo could be sharper for best results.")
-                score -= 20
+                score -= 15
             
             # 2. Lighting check (histogram analysis)
             mean_brightness = np.mean(img_gray)
