@@ -38,11 +38,11 @@ DESIGN_FEE_TIERS = {
 }
 
 
-def _headers() -> dict:
+def _get_api_key() -> str:
     key = settings.METALS_DEV_API_KEY
     if not key:
         raise RuntimeError("METALS_DEV_API_KEY not configured")
-    return {"X-API-KEY": key}
+    return key
 
 
 def get_spot_prices() -> dict[str, float]:
@@ -61,10 +61,10 @@ def get_spot_prices() -> dict[str, float]:
     try:
         # metals.dev returns prices in USD per troy ounce by default
         # 1 troy ounce = 31.1035 grams
+        # API key goes in query params, not headers
         resp = requests.get(
             f"{METALS_API_BASE}/latest",
-            headers=_headers(),
-            params={"currency": "USD", "unit": "toz"},
+            params={"api_key": _get_api_key(), "currency": "USD", "unit": "toz"},
             timeout=10,
         )
         resp.raise_for_status()
