@@ -22,7 +22,8 @@ function PayForm({ portraitId }) {
     })
     if (error) { setErr(error.message || 'Payment failed'); setBusy(false); return }
     if (paymentIntent && paymentIntent.status === 'succeeded') {
-      // Payment succeeded - redirect to status page
+      // Payment succeeded - wait 2 seconds for webhook, then redirect
+      await new Promise(resolve => setTimeout(resolve, 2000))
       window.location.href = `/portraits/${portraitId}?payment=success`
     } else { setBusy(false) }
   }
@@ -41,6 +42,7 @@ function PayForm({ portraitId }) {
 
 export default function PortraitDeposit() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [portrait, setPortrait] = useState(null)
   const [stripePromise, setStripePromise] = useState(null)
   const [clientSecret, setClientSecret] = useState('')
@@ -51,14 +53,18 @@ export default function PortraitDeposit() {
       try {
         const p = await api.getPortrait(id)
         setPortrait(p)
-        if (p.deposit_paid) return // already paid
+        if (p.deposit_paid) {
+          // Already paid - redirect immediately
+          navigate(`/portraits/${id}?payment=success`, { replace: true })
+          return
+        }
         if (p.status === 'photo_rejected') return
         const resp = await api.startGeneration(id)
         setClientSecret(resp.client_secret)
         setStripePromise(loadStripe(resp.publishable_key))
       } catch (e) { setErr(String(e.message || e)) }
     })()
-  }, [id])
+  }, [id, navigate])
 
   if (err) return <section className="container page"><h1>Oops</h1><div className="notice">{err}</div></section>
   if (!portrait) return <section className="container page"><div className="loading">Loading…</div></section>
@@ -73,12 +79,12 @@ export default function PortraitDeposit() {
     )
   }
 
-  if (portrait.deposit_paid) {
-    // Redirect to status page immediately if deposit already paid
-    window.location.href = `/portraits/${id}`
+  // If deposit already paid, the useEffect above handles redirect
+  // This shouldn't render, but just in case:
+  if (portrait && portrait.deposit_paid) {
     return (
       <section className="container page">
-        <div className="loading">Redirecting to your portrait...</div>
+        <div className="loading">Payment confirmed. Redirecting...</div>
       </section>
     )
   }
