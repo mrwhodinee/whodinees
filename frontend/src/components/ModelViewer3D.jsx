@@ -3,8 +3,8 @@ import React, { useEffect, useRef, useState } from 'react'
 /**
  * Premium 3D Model Viewer Component
  * 
- * Wraps Google's model-viewer web component with proper error handling,
- * loading states, and fallbacks for a premium user experience.
+ * Uses direct DOM manipulation to create model-viewer element
+ * for maximum compatibility with the web component.
  */
 export default function ModelViewer3D({ 
   glbUrl, 
@@ -14,110 +14,64 @@ export default function ModelViewer3D({
   autoRotate = true,
   className = ''
 }) {
-  const viewerRef = useRef(null)
+  const containerRef = useRef(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [scriptLoaded, setScriptLoaded] = useState(false)
+  const [progress, setProgress] = useState(0)
 
-  // Load model-viewer script
   useEffect(() => {
-    // Check if already loaded
-    if (window.customElements && window.customElements.get('model-viewer')) {
-      setScriptLoaded(true)
-      return
-    }
+    if (!containerRef.current) return
 
-    // Check if script tag already exists
-    if (document.querySelector('script[src*="model-viewer"]')) {
-      // Script is loading, wait for it
-      const checkLoaded = setInterval(() => {
-        if (window.customElements && window.customElements.get('model-viewer')) {
-          setScriptLoaded(true)
-          clearInterval(checkLoaded)
-        }
-      }, 100)
-      return () => clearInterval(checkLoaded)
-    }
-
-    // Load the script
-    const script = document.createElement('script')
-    script.type = 'module'
-    script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js'
-    script.async = true
+    console.log('🎨 Creating model-viewer element...')
+    console.log('GLB URL:', glbUrl)
+    console.log('Poster URL:', posterUrl)
     
-    script.onload = () => {
-      console.log('Model-viewer script loaded')
-      setScriptLoaded(true)
+    const viewer = document.createElement('model-viewer')
+    viewer.setAttribute('src', glbUrl)
+    viewer.setAttribute('alt', alt)
+    if (posterUrl) viewer.setAttribute('poster', posterUrl)
+    viewer.setAttribute('camera-controls', '')
+    viewer.setAttribute('touch-action', 'pan-y')
+    if (autoRotate) {
+      viewer.setAttribute('auto-rotate', '')
+      viewer.setAttribute('auto-rotate-delay', '1000')
+      viewer.setAttribute('rotation-per-second', '30deg')
     }
-    
-    script.onerror = () => {
-      console.error('Failed to load model-viewer script')
-      setError('Failed to load 3D viewer component')
-    }
-    
-    document.head.appendChild(script)
+    viewer.setAttribute('shadow-intensity', '1')
+    viewer.setAttribute('exposure', '1')
+    viewer.setAttribute('environment-image', 'neutral')
+    viewer.style.width = '100%'
+    viewer.style.height = height
+    viewer.style.background = '#f4f0ff'
+    viewer.style.borderRadius = '12px'
 
-    return () => {
-      // Don't remove script on unmount - keep it for other instances
-    }
-  }, [])
-
-  // Attach event listeners once script is loaded
-  useEffect(() => {
-    if (!scriptLoaded || !viewerRef.current) return
-
-    const viewer = viewerRef.current
-
-    const handleLoad = () => {
-      console.log('Model loaded successfully')
+    viewer.addEventListener('load', () => {
+      console.log('✅ Model loaded successfully!')
       setLoading(false)
       setError(null)
-    }
+    })
 
-    const handleError = (event) => {
-      console.error('Model loading error:', event.detail)
+    viewer.addEventListener('error', (e) => {
+      console.error('❌ Model loading error:', e)
       setLoading(false)
-      setError(event.detail?.message || 'Failed to load 3D model')
-    }
+      setError('Failed to load 3D model')
+    })
 
-    const handleProgress = (event) => {
-      const progress = Math.round(event.detail.totalProgress * 100)
-      console.log(`Loading progress: ${progress}%`)
-    }
+    viewer.addEventListener('progress', (e) => {
+      const prog = Math.round(e.detail.totalProgress * 100)
+      setProgress(prog)
+      if (prog % 10 === 0) console.log(`📊 Loading: ${prog}%`)
+    })
 
-    viewer.addEventListener('load', handleLoad)
-    viewer.addEventListener('error', handleError)
-    viewer.addEventListener('progress', handleProgress)
+    containerRef.current.innerHTML = ''
+    containerRef.current.appendChild(viewer)
 
     return () => {
-      viewer.removeEventListener('load', handleLoad)
-      viewer.removeEventListener('error', handleError)
-      viewer.removeEventListener('progress', handleProgress)
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
+      }
     }
-  }, [scriptLoaded])
-
-  if (!scriptLoaded) {
-    return (
-      <div 
-        className={className}
-        style={{
-          height,
-          background: '#f4f0ff',
-          borderRadius: 12,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          gap: '1rem'
-        }}
-      >
-        <div className="spinner" />
-        <div style={{ color: 'var(--ink-soft)', fontSize: '0.9rem' }}>
-          Loading 3D viewer...
-        </div>
-      </div>
-    )
-  }
+  }, [glbUrl, posterUrl, alt, height, autoRotate])
 
   if (error) {
     return (
@@ -160,46 +114,38 @@ export default function ModelViewer3D({
 
   return (
     <div className={className} style={{ position: 'relative' }}>
-      <model-viewer
-        ref={viewerRef}
-        src={glbUrl}
-        alt={alt}
-        poster={posterUrl || ''}
-        camera-controls
-        touch-action="pan-y"
-        auto-rotate={autoRotate ? '' : undefined}
-        auto-rotate-delay="1000"
-        rotation-per-second="30deg"
-        shadow-intensity="1"
-        exposure="1"
-        environment-image="neutral"
-        loading="eager"
-        reveal="auto"
-        style={{
-          width: '100%',
-          height,
-          background: '#f4f0ff',
-          borderRadius: 12
+      <div 
+        ref={containerRef} 
+        style={{ 
+          position: 'relative',
+          minHeight: height 
         }}
       >
         {loading && (
           <div
-            slot="poster"
             style={{
               position: 'absolute',
-              width: '100%',
-              height: '100%',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(244, 240, 255, 0.9)',
-              borderRadius: 12
+              background: 'rgba(244, 240, 255, 0.95)',
+              borderRadius: 12,
+              zIndex: 10,
+              gap: '1rem'
             }}
           >
             <div className="spinner" />
+            <div style={{ color: 'var(--ink-soft)', fontSize: '0.9rem' }}>
+              {progress > 0 ? `Loading 3D model... ${progress}%` : 'Initializing...'}
+            </div>
           </div>
         )}
-      </model-viewer>
+      </div>
       
       {!loading && !error && (
         <div
