@@ -22,51 +22,93 @@ export default function ModelViewer3D({
   useEffect(() => {
     if (!containerRef.current) return
 
-    console.log('🎨 Creating model-viewer element...')
-    console.log('GLB URL:', glbUrl)
-    console.log('Poster URL:', posterUrl)
-    
-    const viewer = document.createElement('model-viewer')
-    viewer.setAttribute('src', glbUrl)
-    viewer.setAttribute('alt', alt)
-    if (posterUrl) viewer.setAttribute('poster', posterUrl)
-    viewer.setAttribute('camera-controls', '')
-    viewer.setAttribute('touch-action', 'pan-y')
-    if (autoRotate) {
-      viewer.setAttribute('auto-rotate', '')
-      viewer.setAttribute('auto-rotate-delay', '1000')
-      viewer.setAttribute('rotation-per-second', '30deg')
+    let mounted = true
+    let checkInterval = null
+
+    // Wait for model-viewer web component to be registered
+    const createViewer = () => {
+      if (!mounted || !containerRef.current) return
+
+      console.log('🎨 Creating model-viewer element...')
+      console.log('GLB URL:', glbUrl)
+      console.log('Poster URL:', posterUrl)
+      
+      const viewer = document.createElement('model-viewer')
+      viewer.setAttribute('src', glbUrl)
+      viewer.setAttribute('alt', alt)
+      if (posterUrl) viewer.setAttribute('poster', posterUrl)
+      viewer.setAttribute('camera-controls', '')
+      viewer.setAttribute('touch-action', 'pan-y')
+      if (autoRotate) {
+        viewer.setAttribute('auto-rotate', '')
+        viewer.setAttribute('auto-rotate-delay', '1000')
+        viewer.setAttribute('rotation-per-second', '30deg')
+      }
+      viewer.setAttribute('shadow-intensity', '1')
+      viewer.setAttribute('exposure', '1')
+      viewer.setAttribute('environment-image', 'neutral')
+      viewer.style.width = '100%'
+      viewer.style.height = height
+      viewer.style.background = '#f4f0ff'
+      viewer.style.borderRadius = '12px'
+
+      viewer.addEventListener('load', () => {
+        console.log('✅ Model loaded successfully!')
+        if (mounted) {
+          setLoading(false)
+          setError(null)
+        }
+      })
+
+      viewer.addEventListener('error', (e) => {
+        console.error('❌ Model loading error:', e)
+        if (mounted) {
+          setLoading(false)
+          setError('Failed to load 3D model')
+        }
+      })
+
+      viewer.addEventListener('progress', (e) => {
+        const prog = Math.round(e.detail.totalProgress * 100)
+        if (mounted) setProgress(prog)
+        if (prog % 10 === 0) console.log(`📊 Loading: ${prog}%`)
+      })
+
+      containerRef.current.innerHTML = ''
+      containerRef.current.appendChild(viewer)
     }
-    viewer.setAttribute('shadow-intensity', '1')
-    viewer.setAttribute('exposure', '1')
-    viewer.setAttribute('environment-image', 'neutral')
-    viewer.style.width = '100%'
-    viewer.style.height = height
-    viewer.style.background = '#f4f0ff'
-    viewer.style.borderRadius = '12px'
 
-    viewer.addEventListener('load', () => {
-      console.log('✅ Model loaded successfully!')
-      setLoading(false)
-      setError(null)
-    })
+    // Check if model-viewer is already registered
+    if (window.customElements && window.customElements.get('model-viewer')) {
+      console.log('✅ model-viewer already registered')
+      createViewer()
+    } else {
+      console.log('⏳ Waiting for model-viewer to register...')
+      // Poll for registration
+      checkInterval = setInterval(() => {
+        if (window.customElements && window.customElements.get('model-viewer')) {
+          console.log('✅ model-viewer registered!')
+          clearInterval(checkInterval)
+          createViewer()
+        }
+      }, 50)
 
-    viewer.addEventListener('error', (e) => {
-      console.error('❌ Model loading error:', e)
-      setLoading(false)
-      setError('Failed to load 3D model')
-    })
-
-    viewer.addEventListener('progress', (e) => {
-      const prog = Math.round(e.detail.totalProgress * 100)
-      setProgress(prog)
-      if (prog % 10 === 0) console.log(`📊 Loading: ${prog}%`)
-    })
-
-    containerRef.current.innerHTML = ''
-    containerRef.current.appendChild(viewer)
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        if (checkInterval) {
+          clearInterval(checkInterval)
+          if (mounted && !containerRef.current?.querySelector('model-viewer')) {
+            console.error('❌ model-viewer script failed to load')
+            setLoading(false)
+            setError('3D viewer failed to load')
+          }
+        }
+      }, 10000)
+    }
 
     return () => {
+      mounted = false
+      if (checkInterval) clearInterval(checkInterval)
       if (containerRef.current) {
         containerRef.current.innerHTML = ''
       }
