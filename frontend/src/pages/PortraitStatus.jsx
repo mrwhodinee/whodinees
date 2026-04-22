@@ -66,8 +66,21 @@ export default function PortraitStatus() {
   const [err, setErr] = useState('')
   const [approving, setApproving] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState('')
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false)
 
   useEffect(() => { ensureModelViewer() }, [])
+  
+  useEffect(() => {
+    // Check if redirected from successful payment
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') === 'success') {
+      setShowPaymentSuccess(true)
+      // Clear the URL parameter
+      window.history.replaceState({}, '', window.location.pathname)
+      // Hide message after 5 seconds
+      setTimeout(() => setShowPaymentSuccess(false), 5000)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -105,17 +118,52 @@ export default function PortraitStatus() {
 
   return (
     <section className="container page">
+      {showPaymentSuccess && (
+        <div style={{
+          background: '#4CAF50',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          fontWeight: '600',
+          textAlign: 'center'
+        }}>
+          ✓ Payment successful! Your 3D model is being generated now...
+        </div>
+      )}
       <h1>Your portrait</h1>
       <p style={{color:'var(--ink-soft)'}}>
-        {status === 'deposit_pending' && 'Waiting on deposit…'}
-        {status === 'generating' && 'Generating your 3D model. This usually takes 3-5 minutes. You can leave and come back — we\'ll email you when it\'s ready.'}
-        {status === 'awaiting_approval' && 'Your model is ready. Review it below — you can rotate it in 3D.'}
+        {status === 'deposit_pending' && 'Your photo passed quality review! Pay the $19 deposit to generate your 3D model.'}
+        {status === 'generating' && (
+          <>
+            <strong style={{color:'var(--accent)'}}>Generating your 3D model...</strong><br/>
+            This usually takes 3-5 minutes. You can leave and come back — we'll email you when it's ready.<br/>
+            <span style={{fontSize:'0.85rem'}}>Refresh this page to check progress, or we'll notify you via email.</span>
+          </>
+        )}
+        {status === 'awaiting_approval' && 'Your model is ready! Review it below — you can rotate it in 3D.'}
         {status === 'approved' && 'Approved! Choose a material and size →'}
         {status === 'ordered' && 'Order placed. Check your email.'}
       </p>
 
       {status === 'deposit_pending' && (
-        <Link className="button" to={`/portraits/${id}/deposit`}>Complete deposit →</Link>
+        <Link className="button" to={`/portraits/${id}/deposit`}>Pay $19 deposit →</Link>
+      )}
+      
+      {status === 'generating' && variants.length === 0 && (
+        <div style={{
+          background: 'var(--accent-soft)',
+          padding: '1.5rem',
+          borderRadius: '12px',
+          marginTop: '1rem',
+          textAlign: 'center'
+        }}>
+          <div className="loading" style={{margin: '0 auto 1rem'}}>Processing...</div>
+          <p style={{margin: 0, color: 'var(--ink-soft)', fontSize: '0.9rem'}}>
+            Our AI is analyzing your photo and building a 3D model.<br/>
+            This page will update automatically when ready.
+          </p>
+        </div>
       )}
 
       {variants.length > 0 && (

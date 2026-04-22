@@ -22,7 +22,8 @@ function PayForm({ portraitId }) {
     })
     if (error) { setErr(error.message || 'Payment failed'); setBusy(false); return }
     if (paymentIntent && paymentIntent.status === 'succeeded') {
-      navigate(`/portraits/${portraitId}`)
+      // Payment succeeded - redirect to status page
+      window.location.href = `/portraits/${portraitId}?payment=success`
     } else { setBusy(false) }
   }
 
@@ -73,11 +74,11 @@ export default function PortraitDeposit() {
   }
 
   if (portrait.deposit_paid) {
+    // Redirect to status page immediately if deposit already paid
+    window.location.href = `/portraits/${id}`
     return (
       <section className="container page">
-        <h1>Deposit received</h1>
-        <p>We're generating your custom 3D model. This takes a few minutes.</p>
-        <Link className="button" to={`/portraits/${id}`}>View progress →</Link>
+        <div className="loading">Redirecting to your portrait...</div>
       </section>
     )
   }
