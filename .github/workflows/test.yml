@@ -41,6 +41,15 @@ jobs:
       run: |
         pip install -r requirements.txt
     
+    - name: Run migrations
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: 'False'
+      run: |
+        cd backend
+        python manage.py migrate --noinput
+    
     - name: Run Django tests
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
