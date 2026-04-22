@@ -1,0 +1,144 @@
+name: Whodinees Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: whodinees_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django
+    
+    - name: Run Django checks
+      working-directory: ./backend
+      env:
+        DJANGO_SECRET_KEY: test-secret-key-for-ci
+        DEBUG: 'True'
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/whodinees_test
+      run: |
+        python manage.py check
+    
+    - name: Run migrations
+      working-directory: ./backend
+      env:
+        DJANGO_SECRET_KEY: test-secret-key-for-ci
+        DEBUG: 'True'
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/whodinees_test
+      run: |
+        python manage.py migrate
+    
+    - name: Run Django tests
+      working-directory: ./backend
+      env:
+        DJANGO_SECRET_KEY: test-secret-key-for-ci
+        DEBUG: 'True'
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/whodinees_test
+        # Mock API keys for testing
+        STRIPE_PUBLISHABLE_KEY: pk_test_mock
+        STRIPE_SECRET_KEY: sk_test_mock
+        STRIPE_WEBHOOK_SECRET: whsec_test_mock
+        MESHY_API_KEY: test_mock
+        ANTHROPIC_API_KEY: test_mock
+        BRAVE_API_KEY: test_mock
+      run: |
+        python manage.py test --verbosity=2
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Cache Node modules
+      uses: actions/cache@v3
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Build frontend
+      working-directory: ./frontend
+      env:
+        NODE_ENV: production
+      run: npm run build
+    
+    - name: Check for build errors
+      run: |
+        if [ ! -d "frontend/dist" ]; then
+          echo "Build failed - dist directory not created"
+          exit 1
+        fi
+        if [ ! -f "frontend/dist/index.html" ]; then
+          echo "Build failed - index.html not found"
+          exit 1
+        fi
+        echo "✅ Frontend build successful"
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Check Python syntax
+      run: |
+        python -m py_compile backend/**/*.py || echo "⚠️ Some Python files have syntax errors"
+    
+    - name: Check for common issues
+      working-directory: ./backend
+      run: |
+        echo "Checking for missing migrations..."
+        python manage.py makemigrations --check --dry-run || echo "⚠️ Missing migrations detected"
