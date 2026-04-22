@@ -129,9 +129,11 @@ class OrderModelTests(TestCase):
         
         order.recompute_totals()
         
-        # 2 items × $50 = $100
+        # 2 items × $50 = $100 subtotal
         self.assertEqual(order.subtotal, Decimal('100.00'))
-        self.assertEqual(order.total, Decimal('100.00'))
+        # $100 + $6 shipping = $106 total
+        self.assertEqual(order.shipping_cost, Decimal('6.00'))
+        self.assertEqual(order.total, Decimal('106.00'))
 
 
 class WebhookIntegrationTests(TestCase):
