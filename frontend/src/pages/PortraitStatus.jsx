@@ -1,22 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../api.js'
-
-// Load @google/model-viewer from CDN
-function ensureModelViewer() {
-  if (typeof window === 'undefined') return
-  if (window.__modelViewerLoaded) return
-  
-  // Load the script
-  const script = document.createElement('script')
-  script.type = 'module'
-  script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js'
-  script.async = true
-  document.head.appendChild(script)
-  
-  window.__modelViewerLoaded = true
-  console.log('Model-viewer script loaded')
-}
+import ModelViewer3D from '../components/ModelViewer3D.jsx'
 
 function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
   const status = (variant.status || '').toUpperCase()
@@ -32,24 +17,13 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
       </div>
       <div className="variant-preview">
         {succeeded && variant.glb_url ? (
-          <div>
-            <model-viewer
-              src={variant.glb_url}
-              alt={`3D Model`}
-              poster={variant.preview_url || ''}
-              camera-controls
-              auto-rotate
-              shadow-intensity="1"
-              exposure="1"
-              environment-image="neutral"
-              loading="eager"
-              reveal="auto"
-              style={{ width: '100%', height: '280px', background: '#f4f0ff', borderRadius: 12 }}
-            />
-            <div style={{textAlign:'center', marginTop:'0.5rem', fontSize:'0.85rem', color:'var(--ink-soft)'}}>
-              ⭮ Drag to rotate • Scroll to zoom
-            </div>
-          </div>
+          <ModelViewer3D
+            glbUrl={variant.glb_url}
+            posterUrl={variant.preview_url}
+            alt={`3D Model - Variant ${index + 1}`}
+            height="320px"
+            autoRotate={true}
+          />
         ) : succeeded && variant.preview_url ? (
           <img src={variant.preview_url} alt="" style={{width:'100%', borderRadius:12}} />
         ) : failed ? (
@@ -83,7 +57,7 @@ export default function PortraitStatus() {
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false)
 
-  useEffect(() => { ensureModelViewer() }, [])
+  // Model viewer is now loaded via ModelViewer3D component
   
   useEffect(() => {
     // Check if redirected from successful payment

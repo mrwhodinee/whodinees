@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Viewer Test</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        model-viewer {
+            width: 100%;
+            height: 500px;
+            background: #f4f0ff;
+            border-radius: 12px;
+        }
+        h1 {
+            margin-top: 0;
+        }
+        .controls {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦎 3D Model Viewer Test</h1>
+        
+        <model-viewer
+            id="viewer"
+            src="https://assets.meshy.ai/ba0de956-ad73-4063-8891-db4c50bf8338/tasks/019db517-9f5a-7e52-8a50-1243cc51e1ac/output/model.glb?Expires=1777119058&Signature=FHzOQ2NbgwMsH3X7HEDZjLFACSQBdiLRFeuL0YDCvAHca9lGsb0e5EGWw0X4jWy4~UOEDMN~d4QLqYB68I4rXGYsc6I1LsaReOXuREmxypgeg-OKgQ1ucGoFURsT1EIa7RWaFYfl4g-vf7egbhIhvgWl7bDft6LzRYPWlDkZu05SR16Vmc6p2OCh9pFOlcK4m58UJU3DQneKsw~TiaLKz5OXefhTT1CKmOeGQpKbLZwQDoCW9Hoz1eg8Aea9~3GcdrMlo7eyDB1SXygy0WmClPyfTNQh4QdI0IjdsVZVgUXDE35BeK9CE6xfFu6SB2ee~F4jeYQAueOR2PIGAg~oRg__&Key-Pair-Id=K1VGYTHIYLM9UM"
+            poster="https://assets.meshy.ai/ba0de956-ad73-4063-8891-db4c50bf8338/tasks/019db517-9f5a-7e52-8a50-1243cc51e1ac/output/preview.png?Expires=1777119058&Signature=h9dhqhlmbSRV-Jy~Tn6Q2EIHXEUKoh2pBX6jCXksAJCsLQD5DWdzdAFC8eSoHaKno7sPfMeJ6WjZqs7mcK-g5Q1A6R0NVoccZklvR-d76N4~dEJSBwd57Tjt8CYE3-jEoi3QAlJCJOVMsoHsz0gVcDW6cVQb~gaFG8OiqTubCddD9Ls35~7fn9AxWGs2xyY1sfJiGKOulSgxo0PktN8EhnNy314KzQFcXnc7daOt-jjleSGElWU7bd1gKDpUB8dJx-WktXKuWdC6KeEn0PWc6fOFN1vKle2SSHvbL2kNwBQICA76uNACbiAbpqSRq7ij5or~P78W9NeTYl-KntHNuA__&Key-Pair-Id=K1VGYTHIYLM9UM"
+            alt="Lizard 3D Model"
+            camera-controls
+            touch-action="pan-y"
+            auto-rotate
+            auto-rotate-delay="1000"
+            rotation-per-second="30deg"
+            shadow-intensity="1"
+            exposure="1"
+            environment-image="neutral"
+            loading="eager"
+            reveal="auto"
+        >
+            <div class="progress-bar" slot="progress-bar">
+                <div class="update-bar"></div>
+            </div>
+        </model-viewer>
+
+        <div class="controls">
+            <p><strong>Instructions:</strong></p>
+            <ul>
+                <li>🖱️ <strong>Drag</strong> to rotate</li>
+                <li>🔍 <strong>Scroll/pinch</strong> to zoom</li>
+                <li>👆 <strong>Two-finger drag</strong> to pan</li>
+            </ul>
+        </div>
+
+        <div class="status" id="status">
+            Loading model...
+        </div>
+    </div>
+
+    <script>
+        const viewer = document.getElementById('viewer');
+        const status = document.getElementById('status');
+
+        viewer.addEventListener('load', () => {
+            status.innerHTML = '✅ <strong>Model loaded successfully!</strong>';
+            status.style.background = '#c8e6c9';
+        });
+
+        viewer.addEventListener('error', (event) => {
+            status.innerHTML = '❌ <strong>Error loading model:</strong> ' + event.detail.message;
+            status.style.background = '#ffcdd2';
+            console.error('Model viewer error:', event);
+        });
+
+        viewer.addEventListener('progress', (event) => {
+            const progress = event.detail.totalProgress;
+            status.innerHTML = `⏳ Loading... ${Math.round(progress * 100)}%`;
+        });
+
+        // Log when model viewer is ready
+        console.log('Model viewer element:', viewer);
+        console.log('Model viewer defined:', customElements.get('model-viewer'));
+    </script>
+</body>
+</html>
