@@ -26,7 +26,18 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
         <span className="variant-status">{status || 'PENDING'}</span>
       </div>
       <div className="variant-preview">
-        {succeeded && variant.glb_url ? (
+        {succeeded && variant.preview_url ? (
+          <div style={{position:'relative'}}>
+            <img src={variant.preview_url} alt="" style={{width:'100%', borderRadius:12}} />
+            {variant.glb_url && (
+              <div style={{marginTop:'0.5rem', textAlign:'center'}}>
+                <a href={variant.glb_url} target="_blank" rel="noopener noreferrer" className="button" style={{fontSize:'0.85rem'}}>
+                  View 3D Model →
+                </a>
+              </div>
+            )}
+          </div>
+        ) : succeeded && variant.glb_url ? (
           <model-viewer
             src={variant.glb_url}
             alt={`Variant ${index + 1}`}
@@ -35,8 +46,6 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
             shadow-intensity="0.8"
             style={{ width: '100%', height: '240px', background: '#f4f0ff', borderRadius: 12 }}
           />
-        ) : succeeded && variant.preview_url ? (
-          <img src={variant.preview_url} alt="" style={{width:'100%', borderRadius:12}} />
         ) : failed ? (
           <div className="variant-fail">Generation failed</div>
         ) : (
