@@ -62,26 +62,10 @@ def validate_photo(file_path: str) -> Tuple[bool, int, List[str]]:
         img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY) if img_color is not None else None
         
         if img_gray is not None:
-            # 1. Blur check (Laplacian variance) - focus on center region only
-            # Professional photos often have bokeh (blurred background), so we only
-            # check sharpness in the center 60% where the subject should be
-            h, w = img_gray.shape
-            center_h_start = int(h * 0.2)
-            center_h_end = int(h * 0.8)
-            center_w_start = int(w * 0.2)
-            center_w_end = int(w * 0.8)
-            center_region = img_gray[center_h_start:center_h_end, center_w_start:center_w_end]
+            # Blur check removed - too many false positives with professional photos
+            # that have bokeh/depth of field. Trust the customer's judgment.
             
-            lap_var = cv2.Laplacian(center_region, cv2.CV_64F).var()
-            if lap_var < 30:  # Very blurry subject
-                issues.append("Subject appears blurry. Please upload a sharp, well-focused image.")
-                score -= 40
-            elif lap_var < 60:  # Slightly soft
-                issues.append("Subject could be sharper for best results.")
-                score -= 15
-            # Note: Blurred backgrounds (bokeh) are fine and won't affect this check
-            
-            # 2. Lighting check (histogram analysis)
+            # 1. Lighting check (histogram analysis)
             mean_brightness = np.mean(img_gray)
             if mean_brightness < 40:  # Too dark
                 issues.append("Photo is too dark. Use better lighting or increase exposure.")
