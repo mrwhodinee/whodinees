@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../api.js'
 
-// Lazy-load @google/model-viewer from CDN — no npm install needed.
+// Load @google/model-viewer from CDN
 function ensureModelViewer() {
   if (typeof window === 'undefined') return
   if (window.__modelViewerLoaded) return
-  const s = document.createElement('script')
-  s.type = 'module'
-  s.src = 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js'
-  document.head.appendChild(s)
+  
+  // Load the script
+  const script = document.createElement('script')
+  script.type = 'module'
+  script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js'
+  script.async = true
+  document.head.appendChild(script)
+  
   window.__modelViewerLoaded = true
+  console.log('Model-viewer script loaded')
 }
 
 function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
@@ -26,26 +31,27 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
         <span className="variant-status">{status || 'PENDING'}</span>
       </div>
       <div className="variant-preview">
-        {succeeded && variant.preview_url ? (
-          <div style={{position:'relative'}}>
-            <img src={variant.preview_url} alt="" style={{width:'100%', borderRadius:12}} />
-            {variant.glb_url && (
-              <div style={{marginTop:'0.5rem', textAlign:'center'}}>
-                <a href={variant.glb_url} target="_blank" rel="noopener noreferrer" className="button" style={{fontSize:'0.85rem'}}>
-                  View 3D Model →
-                </a>
-              </div>
-            )}
+        {succeeded && variant.glb_url ? (
+          <div>
+            <model-viewer
+              src={variant.glb_url}
+              alt={`3D Model`}
+              poster={variant.preview_url || ''}
+              camera-controls
+              auto-rotate
+              shadow-intensity="1"
+              exposure="1"
+              environment-image="neutral"
+              loading="eager"
+              reveal="auto"
+              style={{ width: '100%', height: '280px', background: '#f4f0ff', borderRadius: 12 }}
+            />
+            <div style={{textAlign:'center', marginTop:'0.5rem', fontSize:'0.85rem', color:'var(--ink-soft)'}}>
+              ⭮ Drag to rotate • Scroll to zoom
+            </div>
           </div>
-        ) : succeeded && variant.glb_url ? (
-          <model-viewer
-            src={variant.glb_url}
-            alt={`Variant ${index + 1}`}
-            camera-controls
-            auto-rotate
-            shadow-intensity="0.8"
-            style={{ width: '100%', height: '240px', background: '#f4f0ff', borderRadius: 12 }}
-          />
+        ) : succeeded && variant.preview_url ? (
+          <img src={variant.preview_url} alt="" style={{width:'100%', borderRadius:12}} />
         ) : failed ? (
           <div className="variant-fail">Generation failed</div>
         ) : (
