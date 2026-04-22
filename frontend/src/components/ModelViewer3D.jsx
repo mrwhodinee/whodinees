@@ -93,7 +93,7 @@ export default function ModelViewer3D({
         }
       }, 50)
 
-      // Timeout after 10 seconds
+      // Timeout after 30 seconds (mobile can be slow)
       setTimeout(() => {
         if (checkInterval) {
           clearInterval(checkInterval)
@@ -103,7 +103,7 @@ export default function ModelViewer3D({
             setError('3D viewer failed to load')
           }
         }
-      }, 10000)
+      }, 30000)
     }
 
     return () => {
