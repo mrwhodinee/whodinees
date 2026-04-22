@@ -120,8 +120,8 @@ class StaticFileTests(TestCase):
         response = self.client.get('/')
         content = response.content.decode('utf-8')
         
-        # Skip test if frontend not built (CI environment)
-        if 'frontend build not found' in content:
+        # Skip test if frontend not built (shows fallback page)
+        if 'api: <a href=\'/api/products/\'>/' in content:
             self.skipTest('Frontend not built - skipping model-viewer script check')
         
         # If frontend is built, it should have model-viewer
