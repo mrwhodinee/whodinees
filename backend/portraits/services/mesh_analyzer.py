@@ -48,19 +48,21 @@ def analyze_glb(glb_url_or_path: str) -> dict:
         bbox_size = bbox[1] - bbox[0]
         
         # Calculate properties
-        # Volume: trimesh gives cubic mm if units are mm, but Meshy outputs are
-        # typically in arbitrary units. We'll assume the model is scaled to real-world
-        # size (e.g., 40mm figurine = 40 units). Volume is in cubic units, convert to cm³.
-        # Note: Meshy's default scale is often 1 unit = 1mm.
         volume_cubic_mm = abs(mesh.volume)
-        volume_cm3 = volume_cubic_mm / 1000.0  # 1 cm³ = 1000 mm³
+        volume_cm3 = volume_cubic_mm / 1000.0
         
-        # If volume is suspiciously small (< 0.01 cm³), estimate from bounding box
+        logger.info(f"Mesh analysis: vertices={len(mesh.vertices)}, faces={len(mesh.faces)}, raw_volume={volume_cubic_mm:.6f}mm3, bbox={bbox_size}")
+        
+        # If volume is suspiciously small, estimate from bounding box
         if volume_cm3 < 0.01:
-            # Rough estimate: assume 30% fill of bounding box for typical figurine
-            bbox_volume_mm3 = bbox_size[0] * bbox_size[1] * bbox_size[2]
+            bbox_volume_mm3 = float(bbox_size[0] * bbox_size[1] * bbox_size[2])
             volume_cm3 = (bbox_volume_mm3 / 1000.0) * 0.3
-            logger.warning(f"Mesh volume was {volume_cubic_mm:.6f} mm³, using bbox estimate: {volume_cm3:.2f} cm³")
+            logger.warning(f"Mesh volume was {volume_cubic_mm:.6f} mm3, bbox_volume={bbox_volume_mm3:.2f} mm3, using estimate: {volume_cm3:.2f} cm3")
+        
+        # Final sanity check
+        if volume_cm3 <= 0:
+            volume_cm3 = 0.85
+            logger.error(f"Volume calculation failed completely, using fallback 0.85 cm3")
         
         # Polycount
         polycount = len(mesh.faces)
