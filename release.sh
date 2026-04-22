@@ -5,13 +5,7 @@ cd backend
 # Run migrations
 python manage.py migrate --noinput
 
-# Run tests before deploying
-echo "Running test suite..."
-python manage.py test portraits --noinput --parallel
-
-if [ $? -ne 0 ]; then
-    echo "❌ Tests failed - deployment aborted"
-    exit 1
-fi
-
-echo "✅ All tests passed - deployment continuing"
+# Note: Tests are run in CI/CD pipeline, not in Heroku release phase
+# Heroku release phase has limited resources and database constraints
+# Use GitHub Actions or run tests locally before pushing
+echo "✅ Migrations complete - deployment continuing"
