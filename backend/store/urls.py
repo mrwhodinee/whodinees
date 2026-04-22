@@ -7,6 +7,6 @@ urlpatterns = [
     path("categories/", views.CategoryListView.as_view(), name="category-list"),
     path("orders/", views.create_order, name="order-create"),
     path("orders/<uuid:token>/", views.order_detail, name="order-detail"),
-    path("stripe/webhook/", views.stripe_webhook, name="stripe-webhook"),
+    # NOTE: stripe/webhook/ moved to unified handler in whodinees/urls.py
     path("health/", views.health, name="health"),
 ]
