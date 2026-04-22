@@ -115,8 +115,14 @@ class StaticFileTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/html', response['Content-Type'])
     
-    # NOTE: Can't test for model-viewer script in CI since frontend isn't built
-    # The test would need the frontend build step to run before Django tests
+    def test_index_has_model_viewer_script(self):
+        """Frontend should load model-viewer script"""
+        response = self.client.get('/')
+        content = response.content.decode('utf-8')
+        
+        # Frontend is now built in CI before tests run
+        # This test verifies the model-viewer script is loaded
+        self.assertIn('model-viewer', content.lower())
 
 
 class ViewerErrorHandlingTests(TestCase):
