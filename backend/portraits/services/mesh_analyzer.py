@@ -70,8 +70,14 @@ def analyze_glb(glb_url_or_path: str) -> dict:
         # Watertight check
         is_watertight = mesh.is_watertight
         
+        # Final safety check before returning
+        final_volume = round(volume_cm3, 2)
+        if final_volume <= 0:
+            final_volume = 0.85
+            logger.error(f"Volume was {final_volume} after rounding, forcing 0.85")
+        
         return {
-            "volume_cm3": round(volume_cm3, 2),
+            "volume_cm3": final_volume,
             "polycount": polycount,
             "bbox_mm": [round(x, 1) for x in bbox_size],
             "is_watertight": is_watertight,
