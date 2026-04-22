@@ -55,6 +55,12 @@ jobs:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
         SECRET_KEY: test-secret-key-for-ci
         DEBUG: 'False'
+        STRIPE_SECRET_KEY: 'sk_test_fake'
+        STRIPE_PUBLISHABLE_KEY: 'pk_test_fake'
+        METALS_DEV_API_KEY: 'fake-key-for-tests'
+        SENDGRID_API_KEY: 'fake-key-for-tests'
+        INSTAGRAM_ACCESS_TOKEN: ''
+        INSTAGRAM_ACCOUNT_ID: ''
       run: |
         cd backend
         python manage.py test portraits --noinput --parallel
