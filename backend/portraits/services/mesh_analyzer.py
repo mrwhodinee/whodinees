@@ -43,6 +43,10 @@ def analyze_glb(glb_url_or_path: str) -> dict:
                       for m in mesh.geometry.values())
             )
         
+        # Bounding box in mm
+        bbox = mesh.bounds  # [[min_x, min_y, min_z], [max_x, max_y, max_z]]
+        bbox_size = bbox[1] - bbox[0]
+        
         # Calculate properties
         # Volume: trimesh gives cubic mm if units are mm, but Meshy outputs are
         # typically in arbitrary units. We'll assume the model is scaled to real-world
@@ -53,16 +57,10 @@ def analyze_glb(glb_url_or_path: str) -> dict:
         
         # If volume is suspiciously small (< 0.01 cm³), estimate from bounding box
         if volume_cm3 < 0.01:
-            bbox = mesh.bounds
-            bbox_size = bbox[1] - bbox[0]
             # Rough estimate: assume 30% fill of bounding box for typical figurine
             bbox_volume_mm3 = bbox_size[0] * bbox_size[1] * bbox_size[2]
             volume_cm3 = (bbox_volume_mm3 / 1000.0) * 0.3
             logger.warning(f"Mesh volume was {volume_cubic_mm:.6f} mm³, using bbox estimate: {volume_cm3:.2f} cm³")
-        
-        # Bounding box in mm
-        bbox = mesh.bounds  # [[min_x, min_y, min_z], [max_x, max_y, max_z]]
-        bbox_size = bbox[1] - bbox[0]
         
         # Polycount
         polycount = len(mesh.faces)
