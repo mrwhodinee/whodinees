@@ -194,6 +194,30 @@ def get_portrait(request, portrait_id: int):
     except PetPortrait.DoesNotExist:
         return Response({"detail": "Not found"}, status=404)
 
+    # TEMPORARY WORKAROUND: If deposit pending but not paid, check Stripe directly
+    # This handles cases where webhook didn't fire
+    if portrait.status == "deposit_pending" and not portrait.deposit_paid and portrait.deposit_payment_intent_id:
+        try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            pi = stripe.PaymentIntent.retrieve(portrait.deposit_payment_intent_id)
+            if pi.status == "succeeded":
+                logger.info(f"Polling detected successful payment for portrait {portrait.id}, starting generation")
+                portrait.deposit_paid = True
+                # Start Meshy generation
+                try:
+                    task_ids = meshy_portrait.submit_variants(portrait.uploaded_photo.path, n=1)
+                except Exception as e:
+                    logger.exception(f"Meshy variant submission failed: {e}")
+                    task_ids = []
+                portrait.meshy_variants = [
+                    {"task_id": tid, "status": "PENDING", "progress": 0, "preview_url": "", "glb_url": ""}
+                    for tid in task_ids
+                ]
+                portrait.status = "generating" if task_ids else portrait.status
+                portrait.save(update_fields=["deposit_paid", "meshy_variants", "status", "updated_at"])
+        except Exception as e:
+            logger.warning(f"Failed to poll Stripe for portrait {portrait.id}: {e}")
+
     # If we're generating, refresh Meshy task statuses
     if portrait.status == "generating" and portrait.meshy_variants:
         if _refresh_variant_statuses(portrait):
