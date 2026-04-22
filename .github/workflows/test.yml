@@ -39,7 +39,6 @@ jobs:
     
     - name: Install Python dependencies
       run: |
-        cd backend
         pip install -r requirements.txt
     
     - name: Run Django tests
