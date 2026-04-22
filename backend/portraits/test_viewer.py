@@ -40,7 +40,7 @@ class ModelViewerIntegrationTests(TestCase):
     
     def test_portrait_api_returns_viewer_data(self):
         """API should return all data needed for model viewer"""
-        response = self.client.get(f'/api/portraits/{self.portrait.token}/')
+        response = self.client.get(f'/api/portraits/{self.portrait.id}/')
         self.assertEqual(response.status_code, 200)
         
         data = response.json()
@@ -136,7 +136,7 @@ class ViewerErrorHandlingTests(TestCase):
             status='generating'
         )
         
-        response = self.client.get(f'/api/portraits/{portrait.token}/')
+        response = self.client.get(f'/api/portraits/{portrait.id}/')
         self.assertEqual(response.status_code, 200)
         
         data = response.json()
@@ -158,7 +158,7 @@ class ViewerErrorHandlingTests(TestCase):
             ]
         )
         
-        response = self.client.get(f'/api/portraits/{portrait.token}/')
+        response = self.client.get(f'/api/portraits/{portrait.id}/')
         self.assertEqual(response.status_code, 200)
         
         # API should return the data even if URL is invalid
