@@ -7,6 +7,10 @@
     "node": "20.x"
   },
   "scripts": {
-    "heroku-postbuild": "cd frontend && npm ci --include=dev && NODE_ENV=production npm run build && cd .. && echo 'frontend build done — Python buildpack will run collectstatic after installing deps'"
+    "heroku-postbuild": "cd frontend && npm ci --include=dev && NODE_ENV=production npm run build && cd .. && echo 'frontend build done — Python buildpack will run collectstatic after installing deps'",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
   }
 }
