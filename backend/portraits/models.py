@@ -142,3 +142,33 @@ class PortraitOrder(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} {self.material} {self.size_mm}mm (${self.retail_price})"
+
+
+class PortraitReview(models.Model):
+    """Customer review for a completed portrait order."""
+    
+    order = models.OneToOneField(PortraitOrder, on_delete=models.CASCADE, related_name='review')
+    
+    # Review content
+    rating = models.PositiveIntegerField(help_text="1-5 stars")
+    title = models.CharField(max_length=200, blank=True, default="")
+    comment = models.TextField(blank=True, default="")
+    
+    # Customer photo of their piece
+    customer_photo = models.ImageField(upload_to="review_photos/", blank=True, null=True, help_text="Customer's photo of the finished piece")
+    
+    # Moderation
+    approved = models.BooleanField(default=False)
+    featured = models.BooleanField(default=False, help_text="Show on homepage")
+    
+    # Email tracking
+    review_request_sent_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+    
+    def __str__(self):
+        return f"Review for Order #{self.order.id} - {self.rating}⭐ by {self.order.portrait.customer_email}"

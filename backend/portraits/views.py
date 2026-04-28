@@ -15,9 +15,10 @@ from rest_framework.response import Response
 
 import stripe
 
-from .models import PetPortrait, PortraitOrder
+from .models import PetPortrait, PortraitOrder, PortraitReview
 from .serializers import PetPortraitSerializer, PortraitOrderSerializer
 from .services import photo_validator, meshy_portrait, pricing, metal_prices, email as portrait_email
+from .review_system import generate_discount_code
 
 logger = logging.getLogger(__name__)
 
@@ -555,3 +556,109 @@ def proxy_glb(request, portrait_id):
     except requests.RequestException as e:
         logger.error(f"Failed to fetch GLB from Meshy: {e}")
         return HttpResponse("Failed to load 3D model", status=502)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([MultiPartParser, FormParser])
+@ratelimit(key='ip', rate='5/h', method='POST')
+def submit_review(request, order_token):
+    """
+    Submit a customer review for an order.
+    
+    POST /api/portraits/review/{order_token}
+    
+    Body (multipart/form-data):
+    - rating: 1-5 (required)
+    - title: Review title (optional)
+    - comment: Review text (optional)
+    - photo: Customer photo of finished piece (optional)
+    """
+    try:
+        order = PortraitOrder.objects.get(token=order_token)
+    except PortraitOrder.DoesNotExist:
+        return Response({"error": "Order not found"}, status=http_status.HTTP_404_NOT_FOUND)
+    
+    # Check if review already exists
+    try:
+        review = PortraitReview.objects.get(order=order)
+        if review.rating > 0:  # Already submitted (rating > 0 means submitted)
+            return Response(
+                {"error": "Review already submitted for this order"},
+                status=http_status.HTTP_400_BAD_REQUEST
+            )
+    except PortraitReview.DoesNotExist:
+        review = PortraitReview(order=order)
+    
+    # Validate rating
+    rating = request.data.get('rating')
+    try:
+        rating = int(rating)
+        if not (1 <= rating <= 5):
+            return Response(
+                {"error": "Rating must be between 1 and 5"},
+                status=http_status.HTTP_400_BAD_REQUEST
+            )
+    except (TypeError, ValueError):
+        return Response(
+            {"error": "Invalid rating value"},
+            status=http_status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Update review
+    review.rating = rating
+    review.title = request.data.get('title', '').strip()
+    review.comment = request.data.get('comment', '').strip()
+    
+    # Handle photo upload
+    has_photo = False
+    if 'photo' in request.FILES:
+        review.customer_photo = request.FILES['photo']
+        has_photo = True
+    
+    review.save()
+    
+    logger.info(f"Review submitted for order {order.id}: {rating} stars, photo={has_photo}")
+    
+    # Generate discount code if they uploaded a photo
+    discount_code = None
+    if has_photo:
+        discount_code = generate_discount_code(order)
+    
+    return Response({
+        "success": True,
+        "message": "Thank you for your review!",
+        "discount_code": discount_code,
+        "discount_message": "Here's your 10% off code for your next order!" if discount_code else None
+    }, status=http_status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_reviews(request):
+    """
+    Get approved reviews for display on homepage.
+    
+    GET /api/portraits/reviews?featured=true
+    """
+    reviews = PortraitReview.objects.filter(approved=True, rating__gt=0)
+    
+    if request.query_params.get('featured') == 'true':
+        reviews = reviews.filter(featured=True)
+    
+    reviews = reviews.select_related('order__portrait').order_by('-created_at')[:20]
+    
+    data = []
+    for review in reviews:
+        data.append({
+            'id': review.id,
+            'rating': review.rating,
+            'title': review.title,
+            'comment': review.comment,
+            'customer_photo_url': review.customer_photo.url if review.customer_photo else None,
+            'material': review.order.material,
+            'pet_name': review.order.portrait.pet_name,
+            'created_at': review.created_at.isoformat(),
+        })
+    
+    return Response(data)

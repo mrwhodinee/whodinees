@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import PetPortrait, PortraitOrder
+from .models import PetPortrait, PortraitOrder, PortraitReview
 
 
 @admin.register(PetPortrait)
@@ -23,3 +23,20 @@ class PortraitOrderAdmin(admin.ModelAdmin):
     list_filter = ("status", "material", "size_mm")
     search_fields = ("portrait__customer_email", "stripe_payment_intent_id", "shapeways_order_id", "tracking_number")
     readonly_fields = ("token", "pricing_breakdown_json", "created_at", "updated_at")
+
+
+@admin.register(PortraitReview)
+class PortraitReviewAdmin(admin.ModelAdmin):
+    list_display = (
+        "id", "order", "rating", "title", "approved", "featured",
+        "has_photo", "review_request_sent_at", "created_at",
+    )
+    list_filter = ("rating", "approved", "featured")
+    search_fields = ("order__portrait__customer_email", "title", "comment")
+    readonly_fields = ("review_request_sent_at", "created_at", "updated_at")
+    list_editable = ("approved", "featured")
+    
+    def has_photo(self, obj):
+        return bool(obj.customer_photo)
+    has_photo.boolean = True
+    has_photo.short_description = "Photo uploaded"
