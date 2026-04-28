@@ -18,8 +18,12 @@ export default function ModelViewer3D({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [progress, setProgress] = useState(0)
+  const [modelLoaded, setModelLoaded] = useState(false)
+  const glbUrlRef = useRef(glbUrl)  // Store URL in ref to prevent re-renders
 
   useEffect(() => {
+    // Only create viewer once - never recreate after loaded
+    if (modelLoaded || !glbUrl) return
     if (!containerRef.current) return
 
     let mounted = true
@@ -57,6 +61,7 @@ export default function ModelViewer3D({
         if (mounted) {
           setLoading(false)
           setError(null)
+          setModelLoaded(true)  // Mark as loaded - never recreate
         }
       })
 
@@ -109,11 +114,10 @@ export default function ModelViewer3D({
     return () => {
       mounted = false
       if (checkInterval) clearInterval(checkInterval)
-      if (containerRef.current) {
-        containerRef.current.innerHTML = ''
-      }
+      // DO NOT clear innerHTML on cleanup - keep viewer alive
+      // Only clear if component is truly unmounting (which shouldn't happen)
     }
-  }, [glbUrl, posterUrl, alt, height, autoRotate])
+  }, [])  // Empty deps - run once on mount, never re-run
 
   if (error) {
     return (
