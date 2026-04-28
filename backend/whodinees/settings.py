@@ -68,6 +68,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whodinees.middleware.SecurityHeadersMiddleware",  # Custom security + cache headers
 ]
 
 ROOT_URLCONF = "whodinees.urls"
@@ -136,6 +137,12 @@ STORAGES = {
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Static files cache control (for Cloudflare CDN)
+if not DEBUG:
+    # Aggressive caching for static assets (versioned via collectstatic hash)
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+    # Django will serve with cache headers; Cloudflare will respect them
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # DRF
@@ -186,6 +193,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 60 * 60 * 24  # 1 day; increase later
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Cloudflare proxy support
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 LOGGING = {
     "version": 1,

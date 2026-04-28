@@ -1,0 +1,86 @@
+{
+  "page_rules": [
+    {
+      "priority": 1,
+      "status": "active",
+      "targets": [
+        {
+          "target": "url",
+          "constraint": {
+            "operator": "matches",
+            "value": "whodinees.com/static/*"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "id": "cache_level",
+          "value": "cache_everything"
+        },
+        {
+          "id": "edge_cache_ttl",
+          "value": 2592000
+        },
+        {
+          "id": "browser_cache_ttl",
+          "value": 2592000
+        }
+      ],
+      "description": "Cache static assets (JS, CSS, images) for 30 days"
+    },
+    {
+      "priority": 2,
+      "status": "active",
+      "targets": [
+        {
+          "target": "url",
+          "constraint": {
+            "operator": "matches",
+            "value": "whodinees.com/api/*"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "id": "cache_level",
+          "value": "bypass"
+        }
+      ],
+      "description": "Never cache API responses"
+    },
+    {
+      "priority": 3,
+      "status": "active",
+      "targets": [
+        {
+          "target": "url",
+          "constraint": {
+            "operator": "matches",
+            "value": "whodinees.com/media/*"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "id": "cache_level",
+          "value": "cache_everything"
+        },
+        {
+          "id": "edge_cache_ttl",
+          "value": 604800
+        },
+        {
+          "id": "browser_cache_ttl",
+          "value": 604800
+        }
+      ],
+      "description": "Cache media uploads (photos, models) for 7 days"
+    }
+  ],
+  "notes": [
+    "Free Cloudflare plan includes 3 page rules.",
+    "Priority 1 = highest (applied first).",
+    "Configure these manually in Cloudflare Dashboard > Rules > Page Rules",
+    "Or use Terraform/Cloudflare API to automate"
+  ]
+}
