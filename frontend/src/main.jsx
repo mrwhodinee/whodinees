@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
+import ReactGA from 'react-ga4'
 import App from './App.jsx'
 import { CartProvider } from './cart.jsx'
 import './styles.css'
@@ -20,6 +21,15 @@ if (import.meta.env.PROD) {
     replaysSessionSampleRate: 0.1, // 10% of sessions
     replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
     environment: 'production',
+  })
+}
+
+// Initialize Google Analytics 4
+if (import.meta.env.PROD) {
+  ReactGA.initialize('G-8D2K8DLQ69', {
+    gaOptions: {
+      send_page_view: true
+    }
   })
 }
 

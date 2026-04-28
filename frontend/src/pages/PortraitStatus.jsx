@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../api.js'
 import ModelViewer3D from '../components/ModelViewer3D.jsx'
+import { trackModelGenerated } from '../analytics.js'
 
 function VariantCard({ variant, index, selected, onSelect, onPick, disabled, glbUrl }) {
   const status = (variant.status || '').toUpperCase()
@@ -56,6 +57,7 @@ export default function PortraitStatus() {
   const [approving, setApproving] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false)
+  const modelTrackedRef = useRef(false)  // Track model_generated event once
 
   // Model viewer is now loaded via ModelViewer3D component
   
@@ -79,6 +81,15 @@ export default function PortraitStatus() {
         if (cancelled) return
         setPortrait(p)
         if (p.selected_variant_task_id) setSelectedTaskId(p.selected_variant_task_id)
+        
+        // Track model_generated once when status reaches awaiting_approval
+        if (!modelTrackedRef.current && p.status === 'awaiting_approval' && p.meshy_variants?.length > 0) {
+          const variant = p.meshy_variants[0]
+          if (variant.status === 'SUCCEEDED') {
+            trackModelGenerated(p.id, variant.task_id)
+            modelTrackedRef.current = true
+          }
+        }
       } catch (e) { setErr(String(e.message || e)) }
     }
     tick()

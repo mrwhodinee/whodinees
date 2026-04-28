@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { api } from '../api.js'
+import { trackMaterialSelected, trackCheckoutStarted, trackOrderCompleted } from '../analytics.js'
 
 const MATERIAL_LABEL = {
   plastic: 'Plastic',
@@ -77,7 +78,13 @@ export default function PortraitCheckout() {
     if (!portrait) return
     setLoadingPrice(true)
     api.calculatePortraitPrice(id, material)
-      .then(setPriceBreakdown)
+      .then(breakdown => {
+        setPriceBreakdown(breakdown)
+        // Track material selection
+        if (breakdown?.retail_price) {
+          trackMaterialSelected(material, breakdown.retail_price)
+        }
+      })
       .catch(() => setPriceBreakdown(null))
       .finally(() => setLoadingPrice(false))
   }, [id, material, portrait])
@@ -90,6 +97,12 @@ export default function PortraitCheckout() {
       setClientSecret(resp.client_secret)
       setOrderToken(resp.order.token)
       setStripePromise(loadStripe(resp.publishable_key))
+      
+      // Track checkout started
+      if (priceBreakdown?.retail_price) {
+        trackCheckoutStarted(id, material, priceBreakdown.retail_price)
+      }
+      
       setStep('pay')
     } catch (e) { setErr(String(e.message || e)) }
     finally { setSubmitting(false) }

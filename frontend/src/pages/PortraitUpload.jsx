@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api.js'
+import { trackUploadStarted } from '../analytics.js'
 
 const MIN_SHORTEST_SIDE = 1400
 const MAX_BYTES = 15 * 1024 * 1024
@@ -48,6 +49,10 @@ export default function PortraitUpload() {
     e.preventDefault()
     if (!file) { setErr('Please choose a photo'); return }
     if (clientIssues.length) { setErr('Please fix the photo issues first'); return }
+    
+    // Track upload started
+    trackUploadStarted(form.pet_type)
+    
     setBusy(true); setErr('')
     try {
       const fd = new FormData()
