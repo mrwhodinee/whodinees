@@ -6,6 +6,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django_ratelimit.decorators import ratelimit
 from rest_framework import status as http_status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -44,8 +45,13 @@ def _order_metadata(order: PortraitOrder) -> dict:
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser])
+@ratelimit(key='ip', rate='5/h', method='POST', block=True)
+@ratelimit(key='ip', rate='20/d', method='POST', block=True)
 def create_portrait(request):
-    """POST /api/portraits/ — upload photo, validate, create PetPortrait."""
+    """POST /api/portraits/ — upload photo, validate, create PetPortrait.
+    
+    Rate limits: 5 uploads per hour, 20 per day per IP.
+    """
     email = (request.data.get("customer_email") or "").strip()
     pet_name = (request.data.get("pet_name") or "").strip()
     pet_type = (request.data.get("pet_type") or "dog").strip()
@@ -262,8 +268,12 @@ def approve_variant(request, portrait_id: int):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @parser_classes([JSONParser])
+@ratelimit(key='ip', rate='10/d', method='POST', block=True)
 def create_portrait_order(request, portrait_id: int):
-    """POST /api/portraits/:id/order — create PortraitOrder + Stripe PI."""
+    """POST /api/portraits/:id/order — create PortraitOrder + Stripe PI.
+    
+    Rate limit: 10 orders per day per IP.
+    """
     try:
         portrait = PetPortrait.objects.get(pk=portrait_id)
     except PetPortrait.DoesNotExist:
@@ -367,8 +377,11 @@ def pricing_view(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@ratelimit(key='ip', rate='30/h', method='POST', block=True)
 def calculate_portrait_price(request, portrait_id: int):
     """POST /api/portraits/:id/calculate-price
+    
+    Rate limit: 30 requests per hour per IP.
     
     Calculate live pricing for a specific portrait + material.
     Body: {"material": "silver"}

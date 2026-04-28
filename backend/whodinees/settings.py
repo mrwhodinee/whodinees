@@ -198,6 +198,11 @@ LOGGING = {
     },
 }
 
+# Rate Limiting
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'  # Use Django's default cache
+RATELIMIT_VIEW = 'portraits.ratelimit_handler.ratelimited_error'  # Custom error handler
+
 # Sentry Error Monitoring
 if not DEBUG:
     sentry_sdk.init(
