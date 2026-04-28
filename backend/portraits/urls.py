@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import test_views
 
 urlpatterns = [
     path("portraits/", views.create_portrait, name="portrait-create"),
@@ -11,4 +12,7 @@ urlpatterns = [
     path("portraits/<int:portrait_id>/model.glb", views.proxy_glb, name="portrait-glb-proxy"),
     path("pricing/portrait", views.pricing_view, name="portrait-pricing"),
     path("stripe/portrait-webhook/", views.portrait_stripe_webhook, name="portrait-stripe-webhook"),
+    # Test endpoints for Sentry (remove after verification)
+    path("test/sentry-error", test_views.test_sentry_error, name="test-sentry-error"),
+    path("test/sentry-message", test_views.test_sentry_message, name="test-sentry-message"),
 ]

@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import environ
 import dj_database_url
+import sentry_sdk
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent  # whodinees/ (the repo root)
@@ -196,3 +197,20 @@ LOGGING = {
         "store": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+# Sentry Error Monitoring
+if not DEBUG:
+    sentry_sdk.init(
+        dsn="https://449044596d856269142fffc5a5b544c7@o4511297467842560.ingest.us.sentry.io/4511297532592128",
+        # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
+        traces_sample_rate=0.1,  # 10% sampling to save quota
+        # Set profiles_sample_rate to profile 10% of sampled transactions.
+        profiles_sample_rate=0.1,
+        environment="production" if not DEBUG else "development",
+        # Send handled exceptions to Sentry
+        send_default_pii=False,  # Don't send personally identifiable info
+        # Ignore common errors
+        ignore_errors=[
+            KeyboardInterrupt,
+        ],
+    )
