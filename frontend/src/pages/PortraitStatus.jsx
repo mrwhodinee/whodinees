@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../api.js'
 import ModelViewer3D from '../components/ModelViewer3D.jsx'
 
-function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
+function VariantCard({ variant, index, selected, onSelect, onPick, disabled, glbUrl }) {
   const status = (variant.status || '').toUpperCase()
   const succeeded = status === 'SUCCEEDED' || status === 'SUCCESS' || status === 'COMPLETED'
   const failed = ['FAILED','CANCELED','EXPIRED','ERROR'].includes(status)
@@ -16,9 +16,9 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled }) {
         <span className="variant-status">{status || 'PENDING'}</span>
       </div>
       <div className="variant-preview">
-        {succeeded && variant.glb_url ? (
+        {succeeded && glbUrl ? (
           <ModelViewer3D
-            glbUrl={variant.glb_url}
+            glbUrl={glbUrl}
             posterUrl={variant.preview_url}
             alt={`3D Model - Variant ${index + 1}`}
             height="320px"
@@ -166,6 +166,7 @@ export default function PortraitStatus() {
               onSelect={() => pick(v.task_id)}
               onPick={pick}
               disabled={status === 'ordered'}
+              glbUrl={portrait.glb_url}
             />
           ))}
         </div>

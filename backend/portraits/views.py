@@ -479,3 +479,56 @@ def portrait_stripe_webhook(request):
             # TODO: submit to Shapeways once we have the approved GLB's model upload flow
 
     return HttpResponse(status=200)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def proxy_glb(request, portrait_id):
+    """Proxy GLB file from Meshy AI to avoid CORS issues.
+    
+    GET /api/portraits/{id}/model.glb
+    Fetches the GLB from Meshy AI's signed URL and streams it back.
+    """
+    import requests
+    from django.http import Http404
+    
+    try:
+        portrait = PetPortrait.objects.get(id=portrait_id)
+    except PetPortrait.DoesNotExist:
+        raise Http404("Portrait not found")
+    
+    # Get the GLB URL from selected variant
+    glb_url = None
+    if portrait.selected_variant_task_id and portrait.meshy_variants:
+        for variant in portrait.meshy_variants:
+            if variant.get('task_id') == portrait.selected_variant_task_id:
+                glb_url = variant.get('glb_url')
+                break
+    
+    if not glb_url:
+        # Fallback to first succeeded variant
+        for variant in portrait.meshy_variants or []:
+            if variant.get('status') in ['SUCCEEDED', 'SUCCESS', 'COMPLETED']:
+                glb_url = variant.get('glb_url')
+                break
+    
+    if not glb_url:
+        raise Http404("No GLB model available")
+    
+    # Fetch from Meshy AI
+    try:
+        response = requests.get(glb_url, stream=True, timeout=30)
+        response.raise_for_status()
+        
+        # Stream back with proper headers
+        django_response = HttpResponse(
+            response.content,
+            content_type='model/gltf-binary'
+        )
+        django_response['Access-Control-Allow-Origin'] = '*'
+        django_response['Cache-Control'] = 'public, max-age=86400'  # Cache for 24h
+        return django_response
+        
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch GLB from Meshy: {e}")
+        return HttpResponse("Failed to load 3D model", status=502)
