@@ -27,3 +27,4 @@ manifold3d==3.4.1
 opencv-python-headless==4.10.0.84
 sentry-sdk==2.58.0
 django-ratelimit==4.1.0
+django-meta==2.5.1

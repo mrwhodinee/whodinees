@@ -49,8 +49,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",  # For sitemap.xml
     "rest_framework",
     "corsheaders",
+    "meta",  # django-meta for SEO tags
     "store",
     "portraits",
     "marketing",

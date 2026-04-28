@@ -1,13 +1,22 @@
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from store import views as store_views
 from .webhook_handler import unified_stripe_webhook
 from sentry_webhook import sentry_webhook
+from seo_views import StaticViewSitemap, robots_txt
+
+sitemaps = {
+    'static': StaticViewSitemap,
+}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # SEO
+    path("sitemap.xml", sitemap, {'sitemaps': sitemaps}, name='sitemap'),
+    path("robots.txt", robots_txt, name='robots'),
     # Unified webhook endpoint (handles both store and portrait payments)
     path("api/stripe/webhook/", unified_stripe_webhook, name="unified-stripe-webhook"),
     # Sentry webhook for Telegram alerts
@@ -15,7 +24,7 @@ urlpatterns = [
     path("api/", include("store.urls")),
     path("api/", include("portraits.urls")),
     # SPA catch-all. Keep last; admin and api are matched first.
-    re_path(r"^(?!static/|media/|api/|admin/).*$", store_views.spa_index, name="spa"),
+    re_path(r"^(?!static/|media/|api/|admin/|sitemap|robots).*$", store_views.spa_index, name="spa"),
 ]
 
 if settings.DEBUG:
