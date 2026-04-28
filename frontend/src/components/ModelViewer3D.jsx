@@ -20,10 +20,12 @@ export default function ModelViewer3D({
   const [progress, setProgress] = useState(0)
   const [modelLoaded, setModelLoaded] = useState(false)
   const glbUrlRef = useRef(glbUrl)  // Store URL in ref to prevent re-renders
+  const viewerCreatedRef = useRef(false)  // Track if viewer was ever created
 
   useEffect(() => {
-    // Only create viewer once - never recreate after loaded
-    if (modelLoaded || !glbUrl) return
+    // Only create viewer once - never recreate after created
+    if (viewerCreatedRef.current) return  // Already created, never recreate
+    if (!glbUrl) return  // Wait for URL
     if (!containerRef.current) return
 
     let mounted = true
@@ -81,6 +83,7 @@ export default function ModelViewer3D({
 
       containerRef.current.innerHTML = ''
       containerRef.current.appendChild(viewer)
+      viewerCreatedRef.current = true  // Mark as created
     }
 
     // Check if model-viewer is already registered
@@ -114,10 +117,9 @@ export default function ModelViewer3D({
     return () => {
       mounted = false
       if (checkInterval) clearInterval(checkInterval)
-      // DO NOT clear innerHTML on cleanup - keep viewer alive
-      // Only clear if component is truly unmounting (which shouldn't happen)
+      // DO NOT clear innerHTML - keep viewer alive even on re-render
     }
-  }, [])  // Empty deps - run once on mount, never re-run
+  }, [glbUrl])  // Re-run if glbUrl changes, but viewerCreatedRef prevents recreation
 
   if (error) {
     return (
