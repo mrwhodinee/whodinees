@@ -101,7 +101,7 @@ def render_invoice_html(order):
         'portrait': portrait,
         'order_date': order_date,
         'breakdown': breakdown,
-        'company_name': 'Whodinees LLC',
+        'company_name': 'Mr. May Who LLC',
         'company_address': '123 Main St, Suite 100, San Francisco, CA 94105',  # TODO: Update with real address
         'company_email': 'hello@whodinees.com',
         'logo_url': 'https://whodinees.com/static/favicon.svg',  # TODO: Use actual logo
