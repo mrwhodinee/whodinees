@@ -484,7 +484,17 @@ def portrait_stripe_webhook(request):
         if order.status == "pending":
             order.status = "paid"
             order.save(update_fields=["status", "updated_at"])
-            # Send confirmation email with pricing breakdown
+            
+            # Generate invoice PDF
+            try:
+                from .invoice_generator import generate_invoice_pdf, save_invoice_to_order
+                pdf_content = generate_invoice_pdf(order)
+                save_invoice_to_order(order, pdf_content)
+                logger.info(f"Invoice PDF generated for order {order.id}")
+            except Exception as e:
+                logger.exception(f"Failed to generate invoice PDF: {e}")
+            
+            # Send confirmation email with pricing breakdown and invoice
             try:
                 portrait_email.send_portrait_order_confirmation(order)
             except Exception as e:

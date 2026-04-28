@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 SENDGRID_SEND_URL = "https://api.sendgrid.com/v3/mail/send"
 
 
-def _send(to_email: str, subject: str, html: str, text: str = "") -> bool:
+def _send(to_email: str, subject: str, html: str, text: str = "", attachments: list = None) -> bool:
     api_key = settings.SENDGRID_API_KEY
     if not api_key:
         logger.info("SendGrid API key not set — skipping email to %s (subject=%r)", to_email, subject)
@@ -23,6 +23,10 @@ def _send(to_email: str, subject: str, html: str, text: str = "") -> bool:
             {"type": "text/html", "value": html},
         ],
     }
+    
+    # Add attachments if provided
+    if attachments:
+        body["attachments"] = attachments
     resp = requests.post(
         SENDGRID_SEND_URL,
         json=body,
@@ -137,8 +141,26 @@ def send_portrait_order_confirmation(order) -> bool:
     </div>
     """
     
+    # Attach invoice PDF if available
+    attachments = []
+    if order.invoice_pdf:
+        try:
+            import base64
+            with order.invoice_pdf.open('rb') as pdf_file:
+                pdf_content = pdf_file.read()
+                pdf_b64 = base64.b64encode(pdf_content).decode()
+                attachments.append({
+                    "content": pdf_b64,
+                    "type": "application/pdf",
+                    "filename": f"invoice_order_{order.id}.pdf",
+                    "disposition": "attachment"
+                })
+        except Exception as e:
+            logger.error(f"Failed to attach invoice PDF: {e}")
+    
     return _send(
         order.portrait.customer_email,
         f"Your Whodinees portrait order #{order.id}",
-        html
+        html,
+        attachments=attachments
     )

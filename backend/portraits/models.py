@@ -130,6 +130,9 @@ class PortraitOrder(models.Model):
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending")
     notes = models.TextField(blank=True, default="")
+    
+    # Invoice PDF
+    invoice_pdf = models.FileField(upload_to="invoices/", blank=True, null=True, help_text="Generated invoice PDF")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
