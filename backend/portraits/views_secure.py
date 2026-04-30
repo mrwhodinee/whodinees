@@ -125,35 +125,48 @@ def get_portrait(request, token):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def start_generation(request, token):
-    """POST /api/portraits/<uuid>/start-generation - requires email."""
+    """POST /api/portraits/<uuid>/start-generation - creates Stripe deposit PaymentIntent."""
     email = request.data.get('email', '').strip()
     portrait = get_verified_portrait(token, email)
     
-    # Call legacy logic with verified portrait
-    # Copy the logic from views.start_generation
-    from .services import meshy_portrait
+    if portrait.status == "photo_rejected":
+        return Response({"detail": "Photo was rejected. Please upload a new photo."}, status=400)
     
-    if portrait.status != "deposit_pending":
-        return Response({"detail": f"Cannot start from status={portrait.status}"}, status=400)
+    if portrait.deposit_paid:
+        return Response({"detail": "Deposit already paid."}, status=400)
     
-    if not portrait.deposit_paid:
-        return Response({"detail": "Deposit not paid"}, status=400)
+    # Create Stripe PaymentIntent for $19 deposit
+    import stripe
+    from django.conf import settings
     
-    try:
-        task_ids = meshy_portrait.submit_variants(portrait.uploaded_photo.path, n=1)
-    except Exception as e:
-        logger.exception("Meshy submission failed")
-        return Response({"detail": f"Meshy API error: {e}"}, status=500)
+    if not settings.STRIPE_SECRET_KEY:
+        return Response({"detail": "Stripe is not configured"}, status=500)
     
-    portrait.meshy_variants = [
-        {"task_id": tid, "status": "PENDING", "progress": 0, "preview_url": "", "glb_url": ""}
-        for tid in task_ids
-    ]
-    portrait.status = "generating"
-    portrait.save(update_fields=["meshy_variants", "status", "updated_at"])
+    DEPOSIT_AMOUNT_USD = 19
     
-    from .serializers import PetPortraitSerializer
-    return Response(PetPortraitSerializer(portrait).data)
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    intent = stripe.PaymentIntent.create(
+        amount=DEPOSIT_AMOUNT_USD * 100,
+        currency="usd",
+        automatic_payment_methods={"enabled": True},
+        metadata={
+            "portrait_id": str(portrait.id),
+            "portrait_token": str(portrait.token),
+            "customer_email": portrait.customer_email,
+            "flow": "portrait_deposit",
+        },
+        description="Whodinees Portraits Deposit",
+        receipt_email=portrait.customer_email or None,
+    )
+    
+    portrait.deposit_payment_intent_id = intent["id"]
+    portrait.status = "deposit_pending"
+    portrait.save(update_fields=["deposit_payment_intent_id", "status", "updated_at"])
+    
+    return Response({
+        "client_secret": intent["client_secret"],
+        "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+    })
 
 
 @api_view(["POST"])
