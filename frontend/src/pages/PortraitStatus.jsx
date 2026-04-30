@@ -50,7 +50,7 @@ function VariantCard({ variant, index, selected, onSelect, onPick, disabled, glb
 }
 
 export default function PortraitStatus() {
-  const { id } = useParams()
+  const { token } = useParams()
   const navigate = useNavigate()
   const [portrait, setPortrait] = useState(null)
   const [err, setErr] = useState('')
@@ -77,7 +77,12 @@ export default function PortraitStatus() {
     let cancelled = false
     async function tick() {
       try {
-        const p = await api.getPortrait(id)
+        const email = localStorage.getItem('portrait_email')
+        if (!email) {
+          setErr('Session expired. Please start over.')
+          return
+        }
+        const p = await api.getPortrait(token, email)
         if (cancelled) return
         setPortrait(p)
         if (p.selected_variant_task_id) setSelectedTaskId(p.selected_variant_task_id)
@@ -95,7 +100,7 @@ export default function PortraitStatus() {
     tick()
     const int = setInterval(tick, 8000)
     return () => { cancelled = true; clearInterval(int) }
-  }, [id])
+  }, [token])
 
   async function pick(taskId) {
     setSelectedTaskId(taskId)
@@ -105,8 +110,9 @@ export default function PortraitStatus() {
     if (!selectedTaskId) return
     setApproving(true); setErr('')
     try {
-      await api.approveVariant(id, selectedTaskId)
-      navigate(`/portraits/${id}/checkout`)
+      const email = localStorage.getItem('portrait_email')
+      await api.approveVariant(token, selectedTaskId, email)
+      navigate(`/portraits/${token}/checkout`)
     } catch (e) { setErr(String(e.message || e)); setApproving(false) }
   }
 
@@ -147,7 +153,7 @@ export default function PortraitStatus() {
       </p>
 
       {status === 'deposit_pending' && (
-        <Link className="button" to={`/portraits/${id}/deposit`}>Pay $19 deposit →</Link>
+        <Link className="button" to={`/portraits/${token}/deposit`}>Pay $19 deposit →</Link>
       )}
       
       {status === 'generating' && variants.length === 0 && (
@@ -193,7 +199,7 @@ export default function PortraitStatus() {
 
       {status === 'approved' && (
         <div style={{marginTop:'1.5rem'}}>
-          <Link className="button" to={`/portraits/${id}/checkout`}>Choose material & order →</Link>
+          <Link className="button" to={`/portraits/${token}/checkout`}>Choose material & order →</Link>
         </div>
       )}
     </section>

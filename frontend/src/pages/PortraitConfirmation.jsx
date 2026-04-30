@@ -3,7 +3,7 @@ import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { trackOrderCompleted } from '../analytics.js'
 
 export default function PortraitConfirmation() {
-  const { id } = useParams()
+  const { token } = useParams()
   const [searchParams] = useSearchParams()
   
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function PortraitConfirmation() {
         when your portrait ships. Production typically takes 2-3 weeks for plastic, 4-6 for metals.
       </p>
       <div className="ctas" style={{justifyContent:'center'}}>
-        <Link className="button" to={`/portraits/${id}`}>Back to portrait</Link>
+        <Link className="button" to={`/portraits/${token}`}>Back to portrait</Link>
         <Link className="button-ghost" to="/shop">Browse the shop</Link>
       </div>
     </section>

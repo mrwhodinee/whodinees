@@ -64,10 +64,10 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/portraits" element={<PortraitsLanding />} />
           <Route path="/portraits/upload" element={<PortraitUpload />} />
-          <Route path="/portraits/:id" element={<PortraitStatus />} />
-          <Route path="/portraits/:id/deposit" element={<PortraitDeposit />} />
-          <Route path="/portraits/:id/checkout" element={<PortraitCheckout />} />
-          <Route path="/portraits/:id/confirmation" element={<PortraitConfirmation />} />
+          <Route path="/portraits/:token" element={<PortraitStatus />} />
+          <Route path="/portraits/:token/deposit" element={<PortraitDeposit />} />
+          <Route path="/portraits/:token/checkout" element={<PortraitCheckout />} />
+          <Route path="/portraits/:token/confirmation" element={<PortraitConfirmation />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:slug" element={<ProductPage />} />
           <Route path="/cart" element={<Cart />} />

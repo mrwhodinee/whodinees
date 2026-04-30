@@ -15,7 +15,7 @@ const MATERIAL_LABEL = {
   platinum: 'Platinum',
 }
 
-function PayForm({ portraitId, orderToken }) {
+function PayForm({ portraitToken, orderToken }) {
   const stripe = useStripe()
   const elements = useElements()
   const navigate = useNavigate()
@@ -29,11 +29,11 @@ function PayForm({ portraitId, orderToken }) {
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: 'if_required',
-      confirmParams: { return_url: `${window.location.origin}/portraits/${portraitId}/confirmation?order=${orderToken}` },
+      confirmParams: { return_url: `${window.location.origin}/portraits/${portraitToken}/confirmation?order=${orderToken}` },
     })
     if (error) { setErr(error.message || 'Payment failed'); setBusy(false); return }
     if (paymentIntent && paymentIntent.status === 'succeeded') {
-      navigate(`/portraits/${portraitId}/confirmation?order=${orderToken}`)
+      navigate(`/portraits/${portraitToken}/confirmation?order=${orderToken}`)
     } else { setBusy(false) }
   }
 
@@ -47,7 +47,7 @@ function PayForm({ portraitId, orderToken }) {
 }
 
 export default function PortraitCheckout() {
-  const { id } = useParams()
+  const { token } = useParams()
   const navigate = useNavigate()
   const [portrait, setPortrait] = useState(null)
   const [material, setMaterial] = useState('silver')
@@ -65,19 +65,19 @@ export default function PortraitCheckout() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    api.getPortrait(id).then(p => {
+    api.getPortrait(token, localStorage.getItem("portrait_email")).then(p => {
       setPortrait(p)
       if (!['approved', 'ordered'].includes(p.status)) {
-        navigate(`/portraits/${id}`)
+        navigate(`/portraits/${token}`)
       }
     }).catch(e => setErr(String(e.message || e)))
-  }, [id, navigate])
+  }, [token, navigate])
 
   // Load pricing when material changes
   useEffect(() => {
     if (!portrait) return
     setLoadingPrice(true)
-    api.calculatePortraitPrice(id, material)
+    api.calculatePortraitPrice(token, material, localStorage.getItem("portrait_email"))
       .then(breakdown => {
         setPriceBreakdown(breakdown)
         // Track material selection
@@ -87,13 +87,13 @@ export default function PortraitCheckout() {
       })
       .catch(() => setPriceBreakdown(null))
       .finally(() => setLoadingPrice(false))
-  }, [id, material, portrait])
+  }, [token, material, portrait])
 
   async function submit(e) {
     e.preventDefault()
     setSubmitting(true); setErr('')
     try {
-      const resp = await api.createPortraitOrder(id, { material, ...shipping })
+      const resp = await api.createPortraitOrder(token, { material, email: localStorage.getItem('portrait_email'), ...shipping })
       setClientSecret(resp.client_secret)
       setOrderToken(resp.order.token)
       setStripePromise(loadStripe(resp.publishable_key))
@@ -119,7 +119,7 @@ export default function PortraitCheckout() {
         <h1>Payment</h1>
         {stripePromise && clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#8a5cff' } } }}>
-            <PayForm portraitId={id} orderToken={orderToken} />
+            <PayForm portraitToken={token} orderToken={orderToken} />
           </Elements>
         ) : (
           <div className="loading">Preparing payment…</div>

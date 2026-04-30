@@ -66,7 +66,10 @@ export default function PortraitUpload() {
         setBusy(false)
         return
       }
-      navigate(`/portraits/${resp.portrait.id}/deposit`)
+      // Store token and email for secure access
+      localStorage.setItem('portrait_token', resp.portrait.token)
+      localStorage.setItem('portrait_email', form.customer_email)
+      navigate(`/portraits/${resp.portrait.token}/deposit`)
     } catch (e) {
       setErr(String(e.message || e))
       setBusy(false)

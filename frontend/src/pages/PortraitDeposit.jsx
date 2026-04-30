@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { api } from '../api.js'
 
-function PayForm({ portraitId }) {
+function PayForm({ portraitToken }) {
   const stripe = useStripe()
   const elements = useElements()
   const navigate = useNavigate()
@@ -18,13 +18,13 @@ function PayForm({ portraitId }) {
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: 'if_required',
-      confirmParams: { return_url: `${window.location.origin}/portraits/${portraitId}` },
+      confirmParams: { return_url: `${window.location.origin}/portraits/${portraitToken}` },
     })
     if (error) { setErr(error.message || 'Payment failed'); setBusy(false); return }
     if (paymentIntent && paymentIntent.status === 'succeeded') {
       // Payment succeeded - wait 2 seconds for webhook, then redirect
       await new Promise(resolve => setTimeout(resolve, 2000))
-      window.location.href = `/portraits/${portraitId}?payment=success`
+      window.location.href = `/portraits/${portraitToken}?payment=success`
     } else { setBusy(false) }
   }
 
@@ -41,7 +41,7 @@ function PayForm({ portraitId }) {
 }
 
 export default function PortraitDeposit() {
-  const { id } = useParams()
+  const { token } = useParams()
   const navigate = useNavigate()
   const [portrait, setPortrait] = useState(null)
   const [stripePromise, setStripePromise] = useState(null)
@@ -51,20 +51,24 @@ export default function PortraitDeposit() {
   useEffect(() => {
     (async () => {
       try {
-        const p = await api.getPortrait(id)
+        const email = localStorage.getItem('portrait_email')
+        if (!email) {
+          setErr('Session expired. Please start over.')
+          return
+        }
+        const p = await api.getPortrait(token, email)
         setPortrait(p)
         if (p.deposit_paid) {
-          // Already paid - redirect immediately
-          navigate(`/portraits/${id}?payment=success`, { replace: true })
+          navigate(`/portraits/${token}?payment=success`, { replace: true })
           return
         }
         if (p.status === 'photo_rejected') return
-        const resp = await api.startGeneration(id)
+        const resp = await api.startGeneration(token, email)
         setClientSecret(resp.client_secret)
         setStripePromise(loadStripe(resp.publishable_key))
       } catch (e) { setErr(String(e.message || e)) }
     })()
-  }, [id, navigate])
+  }, [token, navigate])
 
   if (err) return <section className="container page"><h1>Oops</h1><div className="notice">{err}</div></section>
   if (!portrait) return <section className="container page"><div className="loading">Loading…</div></section>
@@ -109,7 +113,7 @@ export default function PortraitDeposit() {
       </div>
       {stripePromise && clientSecret ? (
         <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#8a5cff' } } }}>
-          <PayForm portraitId={id} />
+          <PayForm portraitToken={token} />
         </Elements>
       ) : (
         <div className="loading">Preparing payment…</div>

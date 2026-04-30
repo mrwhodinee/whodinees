@@ -33,12 +33,12 @@ export const api = {
   createOrder:  (payload) => request('/api/orders/', { method: 'POST', body: JSON.stringify(payload) }),
   getOrder:     (token) => request(`/api/orders/${token}/`),
 
-  // Portraits
+  // Portraits (SECURE - use UUID token + email)
   createPortrait:     (fd) => postForm('/api/portraits/', fd),
-  getPortrait:        (id) => request(`/api/portraits/${id}/`),
-  startGeneration:    (id) => request(`/api/portraits/${id}/start-generation`, { method: 'POST', body: '{}' }),
-  approveVariant:     (id, taskId) => request(`/api/portraits/${id}/approve`, { method: 'POST', body: JSON.stringify({ task_id: taskId }) }),
-  createPortraitOrder:(id, payload) => request(`/api/portraits/${id}/order`, { method: 'POST', body: JSON.stringify(payload) }),
-  calculatePortraitPrice:(id, material) => request(`/api/portraits/${id}/calculate-price`, { method: 'POST', body: JSON.stringify({ material }) }),
+  getPortrait:        (token, email) => request(`/api/portraits/${token}/?email=${encodeURIComponent(email)}`),
+  startGeneration:    (token, email) => request(`/api/portraits/${token}/start-generation`, { method: 'POST', body: JSON.stringify({ email }) }),
+  approveVariant:     (token, taskId, email) => request(`/api/portraits/${token}/approve`, { method: 'POST', body: JSON.stringify({ task_id: taskId, email }) }),
+  createPortraitOrder:(token, payload) => request(`/api/portraits/${token}/order`, { method: 'POST', body: JSON.stringify(payload) }),
+  calculatePortraitPrice:(token, material, email) => request(`/api/portraits/${token}/calculate-price`, { method: 'POST', body: JSON.stringify({ material, email }) }),
   getPortraitPricing: () => request('/api/pricing/portrait'),
 }
