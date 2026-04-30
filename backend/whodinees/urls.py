@@ -23,6 +23,8 @@ urlpatterns = [
     path("api/sentry/webhook/", sentry_webhook, name="sentry-webhook"),
     path("api/", include("store.urls")),
     path("api/", include("portraits.urls")),
+    # Legal pages
+    path("legal/", include("legal.urls")),
     # SPA catch-all. Keep last; admin and api are matched first.
     re_path(r"^(?!static/|media/|api/|admin/|sitemap|robots).*$", store_views.spa_index, name="spa"),
 ]

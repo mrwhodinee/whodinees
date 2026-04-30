@@ -197,7 +197,12 @@ form.checkout input:focus { outline: none; border-color: var(--accent); box-shad
   font-size: 0.9rem;
   margin-top: 4rem;
 }
-.footer .row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.footer-content { display: flex; flex-direction: column; gap: 1rem; align-items: center; text-align: center; }
+.footer-main { font-size: 0.9rem; }
+.footer-links { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; }
+.footer-links a { color: var(--ink-soft); text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--primary); text-decoration: underline; }
+.footer-separator { color: var(--ink-soft); opacity: 0.5; }
 
 .loading { padding: 3rem; text-align: center; color: var(--ink-soft); }
 .empty { padding: 3rem; text-align: center; color: var(--ink-soft); background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }

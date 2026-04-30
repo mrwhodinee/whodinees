@@ -35,11 +35,21 @@ function Header() {
 function Footer() {
   return (
     <footer className="footer">
-      <div className="container row">
-        <div>
-          © {new Date().getFullYear()} Whodinees · <em>tiny figurines of your tiny best friend</em>
+      <div className="container">
+        <div className="footer-content">
+          <div className="footer-main">
+            © {new Date().getFullYear()} Whodinees · <em>tiny figurines of your tiny best friend</em>
+          </div>
+          <div className="footer-links">
+            <a href="/legal/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+            <span className="footer-separator">·</span>
+            <a href="/legal/terms/" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+            <span className="footer-separator">·</span>
+            <a href="/legal/refund/" target="_blank" rel="noopener noreferrer">Refund Policy</a>
+            <span className="footer-separator">·</span>
+            <Link to="/portraits">Get Started</Link>
+          </div>
         </div>
-        <div><Link to="/portraits">Get Started</Link></div>
       </div>
     </footer>
   )
