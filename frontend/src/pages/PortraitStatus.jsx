@@ -174,18 +174,26 @@ export default function PortraitStatus() {
 
       {variants.length > 0 && (
         <div className="variant-grid">
-          {variants.map((v, i) => (
-            <VariantCard
-              key={v.task_id || i}
-              variant={v}
-              index={i}
-              selected={selectedTaskId === v.task_id}
-              onSelect={() => pick(v.task_id)}
-              onPick={pick}
-              disabled={status === 'ordered'}
-              glbUrl={portrait.glb_url}
-            />
-          ))}
+          {variants.map((v, i) => {
+            // Build GLB proxy URL with email for auth
+            const email = localStorage.getItem('portrait_email')
+            const glbUrl = v.task_id === selectedTaskId && email 
+              ? `/api/portraits/${token}/model.glb?email=${encodeURIComponent(email)}`
+              : null
+            
+            return (
+              <VariantCard
+                key={v.task_id || i}
+                variant={v}
+                index={i}
+                selected={selectedTaskId === v.task_id}
+                onSelect={() => pick(v.task_id)}
+                onPick={pick}
+                disabled={status === 'ordered'}
+                glbUrl={glbUrl}
+              />
+            )
+          })}
         </div>
       )}
 
